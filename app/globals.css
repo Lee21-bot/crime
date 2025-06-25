@@ -38,21 +38,81 @@
 .police-tape {
   background: linear-gradient(
     45deg,
-    #FFFF00 0%, #FFFF00 25%,
-    #000000 25%, #000000 50%,
-    #FFFF00 50%, #FFFF00 75%,
-    #000000 75%, #000000 100%
+    #FFD700 0%, #FFD700 25%,
+    #1a1a1a 25%, #1a1a1a 50%,
+    #FFD700 50%, #FFD700 75%,
+    #1a1a1a 75%, #1a1a1a 100%
   );
   background-size: 80px 32px;
   position: relative;
-  border-top: 2px solid #FFFF00;
-  border-bottom: 2px solid #FFFF00;
+  border-top: 2px solid #FFD700;
+  border-bottom: 2px solid #FFD700;
   box-shadow: 
-    0 2px 8px rgba(255, 255, 0, 0.6),
+    0 2px 8px rgba(255, 215, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
   height: 32px;
+}
+
+/* Floating Background Crime Scene Tapes */
+.crime-tape-layer {
+  position: absolute;
+  width: 120%;
+  height: 60px;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 215, 0, 0.8) 0%, rgba(255, 215, 0, 0.8) 30%,
+    rgba(26, 26, 26, 0.9) 30%, rgba(26, 26, 26, 0.9) 70%,
+    rgba(255, 215, 0, 0.8) 70%, rgba(255, 215, 0, 0.8) 100%
+  );
+  background-size: 100px 60px;
+  backdrop-filter: blur(2px);
+  opacity: 0.7;
+  transform-origin: center;
+}
+
+.crime-tape-layer::before {
+  content: 'CRIME SCENE • DO NOT CROSS • POLICE LINE • DO NOT CROSS • ';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  color: rgba(26, 26, 26, 0.9);
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  animation: scrollTape 30s linear infinite;
+  text-shadow: 1px 1px 0 rgba(255, 215, 0, 0.3);
+  font-family: 'Arial Black', Arial, sans-serif;
+}
+
+/* Individual tape positioning and animations */
+.tape-1 {
+  top: 15%;
+  left: -10%;
+  transform: rotate(-8deg);
+  animation: floatingTapeBreeze1 8s ease-in-out infinite;
+  filter: blur(1px);
+}
+
+.tape-2 {
+  top: 45%;
+  right: -15%;
+  transform: rotate(12deg);
+  animation: floatingTapeBreeze2 10s ease-in-out infinite;
+  filter: blur(2px);
+  opacity: 0.5;
+}
+
+.tape-3 {
+  top: 75%;
+  left: -5%;
+  transform: rotate(-15deg);
+  animation: floatingTapeBreeze3 12s ease-in-out infinite;
+  filter: blur(1.5px);
+  opacity: 0.6;
 }
 
 .police-tape::before {
@@ -61,13 +121,13 @@
   top: 50%;
   left: 0;
   transform: translateY(-50%);
-  color: #000000;
+  color: #1a1a1a;
   font-weight: 900;
   font-size: 0.75rem;
   letter-spacing: 2px;
   white-space: nowrap;
   animation: scrollTape 20s linear infinite;
-  text-shadow: 1px 1px 0 rgba(255, 255, 0, 0.5);
+  text-shadow: 1px 1px 0 rgba(255, 215, 0, 0.3);
   font-family: 'Arial Black', Arial, sans-serif;
 }
 
@@ -81,10 +141,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.2) 50%,
     transparent 100%
   );
-  animation: shimmer 2s ease-in-out infinite;
+  animation: shimmer 3s ease-in-out infinite;
 }
 
 /* Keyframe Animations */
@@ -101,6 +161,63 @@
 @keyframes floatingTape {
   0%, 100% { transform: translateX(0) rotate(-2deg); }
   50% { transform: translateX(15px) rotate(2deg); }
+}
+
+@keyframes floatingTapeBreeze1 {
+  0%, 100% { 
+    transform: rotate(-8deg) translateX(0) translateY(0);
+    filter: blur(1px);
+  }
+  25% { 
+    transform: rotate(-12deg) translateX(20px) translateY(-10px);
+    filter: blur(1.5px);
+  }
+  50% { 
+    transform: rotate(-4deg) translateX(35px) translateY(5px);
+    filter: blur(0.8px);
+  }
+  75% { 
+    transform: rotate(-10deg) translateX(15px) translateY(-5px);
+    filter: blur(1.2px);
+  }
+}
+
+@keyframes floatingTapeBreeze2 {
+  0%, 100% { 
+    transform: rotate(12deg) translateX(0) translateY(0);
+    filter: blur(2px);
+  }
+  33% { 
+    transform: rotate(8deg) translateX(-25px) translateY(15px);
+    filter: blur(2.5px);
+  }
+  66% { 
+    transform: rotate(16deg) translateX(-10px) translateY(-8px);
+    filter: blur(1.8px);
+  }
+}
+
+@keyframes floatingTapeBreeze3 {
+  0%, 100% { 
+    transform: rotate(-15deg) translateX(0) translateY(0);
+    filter: blur(1.5px);
+  }
+  20% { 
+    transform: rotate(-18deg) translateX(30px) translateY(12px);
+    filter: blur(2px);
+  }
+  40% { 
+    transform: rotate(-10deg) translateX(45px) translateY(-5px);
+    filter: blur(1.2px);
+  }
+  60% { 
+    transform: rotate(-20deg) translateX(20px) translateY(8px);
+    filter: blur(1.8px);
+  }
+  80% { 
+    transform: rotate(-12deg) translateX(35px) translateY(-3px);
+    filter: blur(1.4px);
+  }
 }
 
 @keyframes messageSlideIn {
