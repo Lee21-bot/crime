@@ -17,7 +17,7 @@ export default function HomePage() {
                 Every shadow holds a secret. Every whisper tells a story.
               </p>
               
-              <p className="text-3xl md:text-4xl tagline-highlight font-display font-medium italic tracking-wide">
+              <p className="text-3xl md:text-4xl font-display font-medium italic tracking-wide text-red-500 text-shadow-crime !important">
                 The truth awaits in the darkness.
               </p>
             </div>

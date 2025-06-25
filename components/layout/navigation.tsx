@@ -18,16 +18,17 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-accent-yellow font-display font-bold text-xl">
-              ShadowFiles
-            </span>
+                            <div className="font-display font-bold text-2xl flex">
+                  <span className="!text-red-500 !important">Shadow</span>
+                  <span className="text-accent-yellow">Files</span>
+                </div>
           </Link>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             <Link 
               href="/case-files"
-              className={`text-sm font-medium transition-colors hover:text-accent-yellow ${
+              className={`text-base font-medium transition-colors hover:text-accent-yellow ${
                 isActive('/case-files') ? 'text-accent-yellow' : 'text-text-secondary'
               }`}
             >
@@ -37,7 +38,7 @@ export function Navigation() {
             {isInvestigator && (
               <Link 
                 href="/chat"
-                className={`text-sm font-medium transition-colors hover:text-accent-yellow ${
+                className={`text-base font-medium transition-colors hover:text-accent-yellow ${
                   isActive('/chat') ? 'text-accent-yellow' : 'text-text-secondary'
                 }`}
               >
@@ -47,7 +48,7 @@ export function Navigation() {
 
             <Link 
               href="/membership"
-              className={`text-sm font-medium transition-colors hover:text-accent-yellow ${
+              className={`text-base font-medium transition-colors hover:text-accent-yellow ${
                 isActive('/membership') ? 'text-accent-yellow' : 'text-text-secondary'
               }`}
             >
@@ -65,7 +66,7 @@ export function Navigation() {
                 {isInvestigator && (
                   <div className="flex items-center space-x-1 bg-member-gold/20 px-2 py-1 rounded-full member-badge-glow">
                     <Crown className="w-4 h-4 text-member-gold" />
-                    <span className="text-member-gold text-xs font-semibold">Investigator</span>
+                    <span className="text-member-gold text-sm font-semibold">Investigator</span>
                   </div>
                 )}
 

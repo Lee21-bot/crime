@@ -65,8 +65,8 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${crimsonPro.variable} ${inter.variable} font-serif min-h-screen bg-bg-primary text-text-primary antialiased`}>
         <AuthProvider>
-          <div className="relative min-h-screen">
-            {/* Background crime scene effect */}
+          <div className="relative min-h-screen overflow-hidden">
+            {/* Background crime scene effect with blur */}
             <div className="fixed inset-0 bg-crime-gradient pointer-events-none" />
             
             {/* Multiple floating crime scene tapes */}
@@ -75,12 +75,16 @@ export default function RootLayout({
               <div className="crime-tape-layer tape-3"></div>
             </div>
             
-            {/* Navigation */}
-            <Navigation />
+            {/* Navigation with blur */}
+            <div className="relative z-20">
+              <Navigation />
+            </div>
             
-            {/* Main content */}
+            {/* Main content with glass effect */}
             <main className="relative z-10">
-              {children}
+              <div className="backdrop-blur-sm bg-bg-secondary/10">
+                {children}
+              </div>
             </main>
           
           {/* Footer */}
@@ -88,9 +92,10 @@ export default function RootLayout({
             <div className="container mx-auto px-4 py-8">
               <div className="flex flex-col md:flex-row justify-between items-center">
                 <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                  <span className="text-accent-yellow font-display font-bold text-xl">
-                    ShadowFiles
-                  </span>
+                  <div className="font-display font-bold text-2xl flex">
+                    <span className="!text-red-500 !important">Shadow</span>
+                    <span className="text-accent-yellow">Files</span>
+                  </div>
                   <span className="text-text-muted">|</span>
                   <span className="text-text-secondary">True Crime Community</span>
                 </div>

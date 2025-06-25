@@ -25,12 +25,13 @@ const config: Config = {
         "member-silver": "rgb(var(--member-silver) / <alpha-value>)",
       },
       fontFamily: {
+        DEFAULT: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif'],
         serif: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif'],
         display: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif'],
         body: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif'],
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif'],
         fraktur: ['UnifrakturMaguntia', 'cursive'],
-        mono: ['Roboto Mono', 'monospace']
+        mono: ['var(--font-crimson-pro)', 'Crimson Pro', 'serif']
       },
       animation: {
         'floating-tape': 'floatingTape 3s ease-in-out infinite',
