@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from '../providers/auth-provider'
+import { Navigation } from '../components/layout/navigation'
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -52,17 +54,21 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} min-h-screen bg-bg-primary text-text-primary antialiased`}>
-        <div className="relative min-h-screen">
-          {/* Background crime scene effect */}
-          <div className="fixed inset-0 bg-crime-gradient pointer-events-none" />
-          
-          {/* Police tape header */}
-          <div className="police-tape h-8 animate-floating-tape relative z-10" />
-          
-          {/* Main content */}
-          <main className="relative z-10">
-            {children}
-          </main>
+        <AuthProvider>
+          <div className="relative min-h-screen">
+            {/* Background crime scene effect */}
+            <div className="fixed inset-0 bg-crime-gradient pointer-events-none" />
+            
+            {/* Police tape header */}
+            <div className="police-tape h-8 animate-floating-tape relative z-10" />
+            
+            {/* Navigation */}
+            <Navigation />
+            
+            {/* Main content */}
+            <main className="relative z-10">
+              {children}
+            </main>
           
           {/* Footer */}
           <footer className="relative z-10 border-t border-border-primary bg-bg-secondary/80 backdrop-blur-sm">
@@ -85,6 +91,7 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
+        </AuthProvider>
       </body>
     </html>
   );
