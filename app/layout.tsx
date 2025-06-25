@@ -72,12 +72,8 @@ export default function RootLayout({
             {/* Multiple floating crime scene tapes */}
             <div className="fixed inset-0 pointer-events-none z-5">
               <div className="crime-tape-layer tape-1"></div>
-              <div className="crime-tape-layer tape-2"></div>
               <div className="crime-tape-layer tape-3"></div>
             </div>
-            
-            {/* Police tape header */}
-            <div className="police-tape animate-floating-tape relative z-10" />
             
             {/* Navigation */}
             <Navigation />

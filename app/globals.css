@@ -97,14 +97,7 @@
   filter: blur(1px);
 }
 
-.tape-2 {
-  top: 45%;
-  right: -15%;
-  transform: rotate(12deg);
-  animation: floatingTapeBreeze2 10s ease-in-out infinite;
-  filter: blur(2px);
-  opacity: 0.5;
-}
+
 
 .tape-3 {
   top: 75%;
@@ -182,20 +175,7 @@
   }
 }
 
-@keyframes floatingTapeBreeze2 {
-  0%, 100% { 
-    transform: rotate(12deg) translateX(0) translateY(0);
-    filter: blur(2px);
-  }
-  33% { 
-    transform: rotate(8deg) translateX(-25px) translateY(15px);
-    filter: blur(2.5px);
-  }
-  66% { 
-    transform: rotate(16deg) translateX(-10px) translateY(-8px);
-    filter: blur(1.8px);
-  }
-}
+
 
 @keyframes floatingTapeBreeze3 {
   0%, 100% { 
