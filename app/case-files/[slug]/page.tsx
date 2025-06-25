@@ -87,7 +87,8 @@ const difficultyColors = {
   advanced: 'bg-accent-red/20 text-accent-red'
 };
 
-export default function CaseFilePage({ params }: { params: { slug: string } }) {
+export default async function CaseFilePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="container mx-auto max-w-4xl">

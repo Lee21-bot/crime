@@ -168,9 +168,9 @@ export default function CaseFilesPage() {
                 
                 {/* Status Badge */}
                 <div className="absolute top-4 left-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${statusColors[caseFile.status]}`}>
-                    {caseFile.status.replace('_', ' ')}
-                  </span>
+                                   <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${statusColors[caseFile.status as keyof typeof statusColors]}`}>
+                   {caseFile.status.replace('_', ' ')}
+                 </span>
                 </div>
 
                 {/* Premium Badge */}
@@ -186,7 +186,7 @@ export default function CaseFilesPage() {
               {/* Case Details */}
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${difficultyColors[caseFile.difficultyLevel]}`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${difficultyColors[caseFile.difficultyLevel as keyof typeof difficultyColors]}`}>
                     {caseFile.difficultyLevel}
                   </span>
                   <div className="flex items-center text-text-muted text-sm">
