@@ -1,26 +1,236 @@
 @import "tailwindcss";
 
+/* CSS Variables for True Crime Theme */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Background Colors - Deep midnight tones */
+  --bg-primary: 15 15 35;         /* Deep midnight blue */
+  --bg-secondary: 20 20 40;       /* Slightly lighter midnight */
+  --bg-tertiary: 25 25 45;        /* Card background */
+
+  /* Accent Colors - Crime scene palette */
+  --accent-yellow: 255 215 0;     /* Police tape yellow */
+  --accent-red: 220 38 38;        /* Crime scene red */
+  --accent-orange: 251 146 60;    /* Evidence orange */
+
+  /* Text Colors - High contrast for readability */
+  --text-primary: 248 250 252;    /* Primary white text */
+  --text-secondary: 203 213 225;  /* Secondary gray text */
+  --text-muted: 148 163 184;      /* Muted gray text */
+
+  /* Border Colors */
+  --border-primary: 51 65 85;     /* Subtle borders */
+
+  /* Member Badge Colors */
+  --member-gold: 255 215 0;       /* Gold for premium */
+  --member-silver: 192 192 192;   /* Silver for basic */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Enhanced Crime Scene Background */
+.bg-crime-gradient {
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(220, 38, 38, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(251, 146, 60, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, rgb(15, 15, 35) 0%, rgb(10, 10, 25) 100%);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Enhanced Police Tape Animation */
+.police-tape {
+  background: linear-gradient(
+    45deg,
+    #FFD700 0%, #FFD700 25%,
+    #0F0F23 25%, #0F0F23 50%,
+    #FFD700 50%, #FFD700 75%,
+    #0F0F23 75%, #0F0F23 100%
+  );
+  background-size: 60px 60px;
+  position: relative;
+  border: 3px solid #FFD700;
+  box-shadow: 
+    0 4px 8px rgba(255, 215, 0, 0.4),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.police-tape::before {
+  content: '⚠️ CRIME SCENE • DO NOT CROSS • POLICE LINE • INVESTIGATION IN PROGRESS • ';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  color: #0F0F23;
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  white-space: nowrap;
+  animation: scrollTape 25s linear infinite;
+  text-shadow: 1px 1px 2px rgba(255, 215, 0, 0.8);
+}
+
+.police-tape::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.1) 50%,
+    transparent 100%
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Keyframe Animations */
+@keyframes scrollTape {
+  0% { transform: translateY(-50%) translateX(100vw); }
+  100% { transform: translateY(-50%) translateX(-100%); }
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes floatingTape {
+  0%, 100% { transform: translateX(0) rotate(-2deg); }
+  50% { transform: translateX(15px) rotate(2deg); }
+}
+
+@keyframes messageSlideIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes evidenceGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(251, 146, 60, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.8), 0 0 30px rgba(251, 146, 60, 0.6); }
+}
+
+/* Member Badge Glow Effect */
+.member-badge-glow {
+  animation: evidenceGlow 2s ease-in-out infinite;
+}
+
+/* Enhanced Typography */
+.text-shadow-glow {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.text-shadow-crime {
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 10px rgba(220, 38, 38, 0.3);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--bg-secondary));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--accent-yellow) / 0.6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--accent-yellow) / 0.8);
+}
+
+/* Enhanced Button Styles */
+.btn-crime-scene {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-crime-scene::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.btn-crime-scene:hover::before {
+  left: 100%;
+}
+
+/* Serif Typography Enhancements */
+.font-display {
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.tagline-text {
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+}
+
+.tagline-highlight {
+  color: rgb(var(--accent-red));
+  font-weight: 500;
+}
+
+/* Enhanced Card Styles */
+.case-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgb(var(--border-primary));
+}
+
+.case-card:hover {
+  border-color: rgb(var(--accent-yellow) / 0.5);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Loading Animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Global Typography Defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-crimson-pro), 'Crimson Pro', serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+p, div, span {
+  font-family: var(--font-crimson-pro), 'Crimson Pro', serif;
+}
+
+/* Enhanced focus states for accessibility */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgb(var(--accent-yellow));
+  outline-offset: 2px;
+}
+
+/* Backdrop blur support */
+.backdrop-blur-crime {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }

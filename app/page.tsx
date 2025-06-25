@@ -5,33 +5,37 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative px-4 py-16 md:py-24">
+      <section className="relative px-4 py-24 md:py-32">
         <div className="container mx-auto text-center">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-shadow-crime">
-              <span className="text-accent-yellow">Shadow</span>
-              <span className="text-text-primary">Files</span>
+          <div className="max-w-5xl mx-auto">
+            <h1 className="text-6xl md:text-8xl font-display font-bold mb-12 tracking-tight text-shadow-glow">
+              Unravel the <span className="text-accent-red text-shadow-crime">Unknown</span>
             </h1>
-            <p className="text-xl md:text-2xl text-text-secondary mb-4">
-              True Crime Community
-            </p>
-            <p className="text-lg text-text-muted mb-8 max-w-2xl mx-auto">
-              Dive deep into the world's most compelling cold cases. Join our premium community for exclusive access to detailed case files, audio narrations, and real-time discussions with fellow investigators.
-            </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="mb-16 space-y-6">
+              <p className="text-2xl md:text-3xl tagline-text text-text-secondary leading-relaxed font-light">
+                Every shadow holds a secret. Every whisper tells a story.
+              </p>
+              
+              <p className="text-3xl md:text-4xl tagline-highlight font-display font-medium italic tracking-wide">
+                The truth awaits in the darkness.
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link 
                 href="/membership"
-                className="bg-accent-red hover:bg-accent-red/80 text-white px-8 py-4 rounded-lg font-semibold transition-colors flex items-center gap-2 member-badge-glow"
+                className="bg-accent-red hover:bg-accent-red/80 text-white px-10 py-5 rounded-lg font-display font-semibold text-lg transition-all duration-300 flex items-center gap-3 member-badge-glow btn-crime-scene shadow-xl"
               >
-                Join Investigators
-                <ArrowRight className="w-5 h-5" />
+                <Volume2 className="w-6 h-6" />
+                Start Listening
               </Link>
               <Link 
                 href="/case-files"
-                className="border border-border-primary hover:border-accent-yellow text-text-primary px-8 py-4 rounded-lg font-semibold transition-colors"
+                className="bg-bg-secondary/80 backdrop-blur-sm border-2 border-accent-yellow hover:bg-accent-yellow/10 text-accent-yellow px-10 py-5 rounded-lg font-display font-semibold text-lg transition-all duration-300 flex items-center gap-3 btn-crime-scene shadow-xl"
               >
-                Browse Cases
+                <FileText className="w-6 h-6" />
+                Download App
               </Link>
             </div>
           </div>
@@ -110,78 +114,81 @@ export default function HomePage() {
       </section>
 
       {/* Featured Cases Preview */}
-      <section className="px-4 py-16">
+      <section className="px-4 py-20">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-display font-bold text-center mb-12">
-            Featured Cases
+          <h2 className="text-5xl font-display font-bold text-center mb-16 text-shadow-glow">
+            Featured Stories
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow transition-colors">
-              <div className="h-48 bg-gradient-to-br from-accent-red/20 to-bg-primary flex items-center justify-center">
-                <div className="text-6xl opacity-30">🕵️</div>
+            <div className="case-card bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow">
+              <div className="h-64 bg-gradient-to-br from-accent-red/20 to-bg-primary flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/60 to-transparent"></div>
+                <div className="text-7xl opacity-20">🕵️</div>
               </div>
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-accent-red/20 text-accent-red px-2 py-1 rounded text-sm">Cold Case</span>
-                  <span className="text-text-muted text-sm">1947</span>
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="bg-accent-red/20 text-accent-red px-3 py-1 rounded-full text-sm font-medium">Cold Case</span>
+                  <span className="text-text-muted text-sm font-mono">1947</span>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">The Black Dahlia</h3>
-                <p className="text-text-muted text-sm mb-4">
-                  One of Los Angeles' most notorious unsolved murders that continues to captivate investigators...
+                <h3 className="text-2xl font-display font-bold mb-3 text-shadow-glow">The Black Dahlia</h3>
+                <p className="text-text-muted mb-6 leading-relaxed">
+                  One of Los Angeles' most notorious unsolved murders that continues to captivate investigators across decades...
                 </p>
                 <Link 
                   href="/membership"
-                  className="text-accent-yellow hover:text-accent-yellow/80 font-semibold text-sm flex items-center gap-1"
+                  className="text-accent-yellow hover:text-accent-yellow/80 font-display font-semibold flex items-center gap-2 group"
                 >
                   Join to Read Full Case
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
 
-            <div className="bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow transition-colors">
-              <div className="h-48 bg-gradient-to-br from-accent-orange/20 to-bg-primary flex items-center justify-center">
-                <div className="text-6xl opacity-30">📁</div>
+            <div className="case-card bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow">
+              <div className="h-64 bg-gradient-to-br from-accent-orange/20 to-bg-primary flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/60 to-transparent"></div>
+                <div className="text-7xl opacity-20">📁</div>
               </div>
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-accent-orange/20 text-accent-orange px-2 py-1 rounded text-sm">Active</span>
-                  <span className="text-text-muted text-sm">1996</span>
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="bg-accent-orange/20 text-accent-orange px-3 py-1 rounded-full text-sm font-medium">Active</span>
+                  <span className="text-text-muted text-sm font-mono">1996</span>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">JonBenét Ramsey</h3>
-                <p className="text-text-muted text-sm mb-4">
+                <h3 className="text-2xl font-display font-bold mb-3 text-shadow-glow">JonBenét Ramsey</h3>
+                <p className="text-text-muted mb-6 leading-relaxed">
                   A case that shocked America and remains one of the most analyzed investigations in history...
                 </p>
                 <Link 
                   href="/membership"
-                  className="text-accent-yellow hover:text-accent-yellow/80 font-semibold text-sm flex items-center gap-1"
+                  className="text-accent-yellow hover:text-accent-yellow/80 font-display font-semibold flex items-center gap-2 group"
                 >
                   Join to Read Full Case
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
 
-            <div className="bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow transition-colors">
-              <div className="h-48 bg-gradient-to-br from-member-gold/20 to-bg-primary flex items-center justify-center">
-                <div className="text-6xl opacity-30">🔍</div>
+            <div className="case-card bg-bg-tertiary/60 backdrop-blur-sm rounded-lg overflow-hidden border border-border-primary hover:border-accent-yellow">
+              <div className="h-64 bg-gradient-to-br from-member-gold/20 to-bg-primary flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/60 to-transparent"></div>
+                <div className="text-7xl opacity-20">🔍</div>
               </div>
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-member-gold/20 text-member-gold px-2 py-1 rounded text-sm">Premium</span>
-                  <span className="text-text-muted text-sm">1969</span>
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="bg-member-gold/20 text-member-gold px-3 py-1 rounded-full text-sm font-medium member-badge-glow">Premium</span>
+                  <span className="text-text-muted text-sm font-mono">1969</span>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Zodiac Killer</h3>
-                <p className="text-text-muted text-sm mb-4">
+                <h3 className="text-2xl font-display font-bold mb-3 text-shadow-glow">Zodiac Killer</h3>
+                <p className="text-text-muted mb-6 leading-relaxed">
                   The cryptic serial killer who terrorized Northern California and taunted police with coded letters...
                 </p>
                 <Link 
                   href="/membership"
-                  className="text-accent-yellow hover:text-accent-yellow/80 font-semibold text-sm flex items-center gap-1"
+                  className="text-accent-yellow hover:text-accent-yellow/80 font-display font-semibold flex items-center gap-2 group"
                 >
                   Join to Read Full Case
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>

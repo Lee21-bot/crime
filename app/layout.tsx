@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Crimson_Pro, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from '../providers/auth-provider'
 import { Navigation } from '../components/layout/navigation'
 
-const inter = Inter({ subsets: ["latin"] });
+const crimsonPro = Crimson_Pro({ 
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-crimson-pro"
+});
+
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-inter"
+});
 
 export const metadata: Metadata = {
   title: "ShadowFiles - True Crime Community",
@@ -53,7 +63,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} min-h-screen bg-bg-primary text-text-primary antialiased`}>
+      <body className={`${crimsonPro.variable} ${inter.variable} font-serif min-h-screen bg-bg-primary text-text-primary antialiased`}>
         <AuthProvider>
           <div className="relative min-h-screen">
             {/* Background crime scene effect */}
