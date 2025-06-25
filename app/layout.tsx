@@ -70,7 +70,7 @@ export default function RootLayout({
             <div className="fixed inset-0 bg-crime-gradient pointer-events-none" />
             
             {/* Police tape header */}
-            <div className="police-tape h-8 animate-floating-tape relative z-10" />
+            <div className="police-tape animate-floating-tape relative z-10" />
             
             {/* Navigation */}
             <Navigation />

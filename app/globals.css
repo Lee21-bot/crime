@@ -38,33 +38,37 @@
 .police-tape {
   background: linear-gradient(
     45deg,
-    #FFD700 0%, #FFD700 25%,
-    #0F0F23 25%, #0F0F23 50%,
-    #FFD700 50%, #FFD700 75%,
-    #0F0F23 75%, #0F0F23 100%
+    #FFFF00 0%, #FFFF00 25%,
+    #000000 25%, #000000 50%,
+    #FFFF00 50%, #FFFF00 75%,
+    #000000 75%, #000000 100%
   );
-  background-size: 60px 60px;
+  background-size: 80px 32px;
   position: relative;
-  border: 3px solid #FFD700;
+  border-top: 2px solid #FFFF00;
+  border-bottom: 2px solid #FFFF00;
   box-shadow: 
-    0 4px 8px rgba(255, 215, 0, 0.4),
-    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    0 2px 8px rgba(255, 255, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  height: 32px;
 }
 
 .police-tape::before {
-  content: '⚠️ CRIME SCENE • DO NOT CROSS • POLICE LINE • INVESTIGATION IN PROGRESS • ';
+  content: 'CRIME SCENE • DO NOT CROSS • POLICE LINE • DO NOT CROSS • CRIME SCENE • ';
   position: absolute;
   top: 50%;
   left: 0;
   transform: translateY(-50%);
-  color: #0F0F23;
+  color: #000000;
   font-weight: 900;
-  font-size: 0.8rem;
-  letter-spacing: 3px;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
   white-space: nowrap;
-  animation: scrollTape 25s linear infinite;
-  text-shadow: 1px 1px 2px rgba(255, 215, 0, 0.8);
+  animation: scrollTape 20s linear infinite;
+  text-shadow: 1px 1px 0 rgba(255, 255, 0, 0.5);
+  font-family: 'Arial Black', Arial, sans-serif;
 }
 
 .police-tape::after {
@@ -77,10 +81,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 215, 0, 0.1) 50%,
+    rgba(255, 255, 255, 0.3) 50%,
     transparent 100%
   );
-  animation: shimmer 3s ease-in-out infinite;
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 /* Keyframe Animations */
