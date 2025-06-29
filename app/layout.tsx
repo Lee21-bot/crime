@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from '../providers/auth-provider'
+import { ClientProviders } from '../providers/client-providers'
 import { Navigation } from '../components/layout/navigation'
 
 const crimsonPro = Crimson_Pro({ 
@@ -64,7 +64,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${crimsonPro.variable} ${inter.variable} font-serif min-h-screen bg-bg-primary text-text-primary antialiased`}>
-        <AuthProvider>
+        <ClientProviders>
           <div className="relative min-h-screen overflow-hidden">
             {/* Background crime scene effect with blur */}
             <div className="fixed inset-0 bg-crime-gradient pointer-events-none" />
@@ -87,29 +87,29 @@ export default function RootLayout({
               </div>
             </main>
           
-          {/* Footer */}
-          <footer className="relative z-10 border-t border-border-primary bg-bg-secondary/80 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-8">
-              <div className="flex flex-col md:flex-row justify-between items-center">
-                <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                  <div className="font-display font-bold text-2xl flex">
-                    <span className="!text-red-500 !important">Shadow</span>
-                    <span className="text-accent-yellow">Files</span>
+            {/* Footer */}
+            <footer className="relative z-10 border-t border-border-primary bg-bg-secondary/80 backdrop-blur-sm">
+              <div className="container mx-auto px-4 py-8">
+                <div className="flex flex-col md:flex-row justify-between items-center">
+                  <div className="flex items-center space-x-2 mb-4 md:mb-0">
+                    <div className="font-display font-bold text-2xl flex">
+                      <span className="!text-red-500 !important">Shadow</span>
+                      <span className="text-accent-yellow">Files</span>
+                    </div>
+                    <span className="text-text-muted">|</span>
+                    <span className="text-text-secondary">True Crime Community</span>
                   </div>
-                  <span className="text-text-muted">|</span>
-                  <span className="text-text-secondary">True Crime Community</span>
-                </div>
-                
-                <div className="flex items-center space-x-6 text-sm text-text-muted">
-                  <span>© 2024 ShadowFiles</span>
-                  <span>•</span>
-                  <span>Premium Crime Investigation</span>
+                  
+                  <div className="flex items-center space-x-6 text-sm text-text-muted">
+                    <span>© 2024 ShadowFiles</span>
+                    <span>•</span>
+                    <span>Premium Crime Investigation</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </footer>
-        </div>
-        </AuthProvider>
+            </footer>
+          </div>
+        </ClientProviders>
       </body>
     </html>
   );

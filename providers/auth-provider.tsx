@@ -1,20 +1,27 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { Session, User } from '@supabase/supabase-js'
-import { authService, AuthState } from '../lib/auth'
+import { getAuthService } from '../lib/auth'
 import { Database } from '../types/database'
+import { usePathname } from 'next/navigation'
+
+// Consolidate all auth-related state into a single object for atomic updates
+interface AuthState {
+  user: User | null
+  session: Session | null
+  userProfile: Database['public']['Tables']['user_profiles']['Row'] | null
+  userSubscription: Database['public']['Tables']['user_subscriptions']['Row'] | null
+  isInvestigator: boolean
+  loading: boolean
+}
 
 interface AuthContextType extends AuthState {
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   resetPassword: (email: string) => Promise<{ error: any }>
-  userProfile: Database['public']['Tables']['user_profiles']['Row'] | null
-  userSubscription: Database['public']['Tables']['user_subscriptions']['Row'] | null
-  isInvestigator: boolean
-  refreshProfile: () => Promise<void>
-  refreshSubscription: () => Promise<void>
+  refreshUserData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,115 +30,148 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
-    loading: true
+    userProfile: null,
+    userSubscription: null,
+    isInvestigator: false,
+    loading: true,
   })
+  const [authService, setAuthService] = useState<ReturnType<typeof getAuthService> | null>(null)
+  const pathname = usePathname();
 
-  const [userProfile, setUserProfile] = useState<Database['public']['Tables']['user_profiles']['Row'] | null>(null)
-  const [userSubscription, setUserSubscription] = useState<Database['public']['Tables']['user_subscriptions']['Row'] | null>(null)
-
-  // Check if user has active investigator subscription
-  const isInvestigator = userSubscription?.status === 'active' && userSubscription?.tier === 'investigator'
-
+  // Initialize auth service on component mount
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { session } = await authService.getSession()
-      
-      setAuthState({
-        user: session?.user ?? null,
-        session,
-        loading: false
-      })
+    const service = getAuthService()
+    setAuthService(service)
 
+    const fetchInitialSession = async () => {
+      const { session } = await service.getSession()
       if (session?.user) {
-        await loadUserData(session.user.id)
+        await loadUserData(service, session.user.id)
+      } else {
+        setAuthState(prev => ({ ...prev, loading: false }))
       }
     }
 
-    getInitialSession()
+    fetchInitialSession()
+  }, [])
 
-    // Listen for auth changes
-    const { data: { subscription } } = authService.onAuthStateChange(async (session) => {
-      setAuthState({
+  // Centralized function to load user data and update state atomically
+  const loadUserData = async (service: ReturnType<typeof getAuthService>, userId: string) => {
+    setAuthState(prev => ({ ...prev, loading: true }))
+    try {
+      const [profileResult, subscriptionResult] = await Promise.all([
+        service.getUserProfile(userId),
+        service.getUserSubscription(userId),
+      ])
+
+      const userProfile = profileResult?.profile || null
+      const userSubscription = subscriptionResult?.subscription || null
+      const isInvestigator =
+        userSubscription?.tier === 'investigator' && userSubscription?.status === 'active'
+
+      setAuthState(prev => ({
+        ...prev,
+        userProfile,
+        userSubscription,
+        isInvestigator,
+        loading: false,
+      }))
+    } catch (error) {
+      console.error('Error loading user data:', error)
+      setAuthState(prev => ({
+        ...prev,
+        userProfile: null,
+        userSubscription: null,
+        isInvestigator: false,
+        loading: false,
+      }))
+    }
+  }
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    if (!authService) return
+
+    const { data: { subscription } } = authService.onAuthStateChange(async (_event, session) => {
+      setAuthState(prev => ({
+        ...prev,
         user: session?.user ?? null,
-        session,
-        loading: false
-      })
-
+        session: session ?? null,
+      }))
       if (session?.user) {
-        await loadUserData(session.user.id)
+        await loadUserData(authService, session.user.id)
       } else {
-        // Clear user data on sign out
-        setUserProfile(null)
-        setUserSubscription(null)
+        // Clear user-specific data on logout
+        setAuthState(prev => ({
+          ...prev,
+          userProfile: null,
+          userSubscription: null,
+          isInvestigator: false,
+          loading: false
+        }))
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const loadUserData = async (userId: string) => {
-    // Load user profile
-    const { profile } = await authService.getUserProfile(userId)
-    setUserProfile(profile)
-
-    // Load user subscription
-    const { subscription } = await authService.getUserSubscription(userId)
-    setUserSubscription(subscription)
-  }
-
-  const refreshProfile = async () => {
-    if (authState.user) {
-      const { profile } = await authService.getUserProfile(authState.user.id)
-      setUserProfile(profile)
+    return () => {
+      subscription.unsubscribe()
     }
-  }
+  }, [authService])
 
-  const refreshSubscription = async () => {
-    if (authState.user) {
-      const { subscription } = await authService.getUserSubscription(authState.user.id)
-      setUserSubscription(subscription)
+  // Refresh session on route change
+  useEffect(() => {
+    if (!authService) return;
+    const refresh = async () => {
+      if (authState.user) {
+        await loadUserData(authService, authState.user.id);
+      } else {
+        const { session } = await authService.getSession();
+        if (session?.user) {
+          await loadUserData(authService, session.user.id);
+        } else {
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
+      }
+    };
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, authService]);
+
+  const refreshUserData = useCallback(async () => {
+    if (authService && authState.user) {
+      await loadUserData(authService, authState.user.id)
     }
-  }
+  }, [authService, authState.user])
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const { error } = await authService.signUp({ email, password, displayName })
-    return { error }
+    if (!authService) return { error: new Error('Auth service not initialized') }
+    return await authService.signUp({ email, password, displayName })
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await authService.signIn({ email, password })
-    return { error }
+    if (!authService) return { error: new Error('Auth service not initialized') }
+    return await authService.signIn({ email, password })
   }
 
   const signOut = async () => {
-    const { error } = await authService.signOut()
-    return { error }
+    if (!authService) return { error: new Error('Auth service not initialized') }
+    return await authService.signOut()
   }
 
   const resetPassword = async (email: string) => {
-    const { error } = await authService.resetPassword(email)
-    return { error }
+    if (!authService) return { error: new Error('Auth service not initialized') }
+    return await authService.resetPassword(email)
   }
 
-  const value: AuthContextType = {
+  const value = {
     ...authState,
     signUp,
     signIn,
     signOut,
     resetPassword,
-    userProfile,
-    userSubscription,
-    isInvestigator,
-    refreshProfile,
-    refreshSubscription
+    refreshUserData,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
@@ -142,12 +182,16 @@ export function useAuth() {
   return context
 }
 
-// Helper hook for checking if user can access content
 export function useCanAccess(requiredTier: 'free' | 'investigator') {
-  const { user, isInvestigator } = useAuth()
-  
-  if (requiredTier === 'free') return true
-  if (requiredTier === 'investigator') return user && isInvestigator
-  
-  return false
+  const { isInvestigator, loading } = useAuth()
+
+  if (loading) {
+    return false
+  }
+
+  if (requiredTier === 'investigator' && !isInvestigator) {
+    return false
+  }
+
+  return true
 } 

@@ -1,262 +1,235 @@
-import Link from 'next/link'
-import { Calendar, MapPin, Clock, ArrowLeft, Volume2, Download, Eye, Users } from 'lucide-react'
+'use client'
 
-// Mock case file data for D.B. Cooper (free tier)
-const caseFileData = {
-  id: 4,
-  slug: 'db-cooper-1971',
-  title: 'D.B. Cooper',
-  subtitle: 'The Gentleman Skyjacker',
-  summary: 'The only unsolved commercial aircraft hijacking in American history - a mysterious man who vanished into thin air.',
-  content: `
-## Case Overview
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Lock, Star, Calendar, Tag, AlertTriangle, MessageSquare, Send } from 'lucide-react'
+import { useAuth } from '../../../providers/auth-provider'
+import { getCaseFilesService } from '../../../lib/case-files/case-files-service'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import type { CaseFile, Comment } from '../../../types/case-files'
 
-On November 24, 1971, a man identifying himself as Dan Cooper (later misreported as "D.B. Cooper") boarded Northwest Orient Flight 305, a Boeing 727 aircraft, in Portland, Oregon, bound for Seattle, Washington.
+export default function CaseFilePage() {
+  const router = useRouter()
+  const { slug } = useParams()
+  const { isInvestigator, user } = useAuth()
+  const [caseFile, setCaseFile] = useState<CaseFile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [newComment, setNewComment] = useState('')
+  const [submittingComment, setSubmittingComment] = useState(false)
 
-## The Hijacking
+  useEffect(() => {
+    loadCaseFile()
+  }, [slug])
 
-At approximately 3:00 PM, Cooper handed flight attendant Florence Schaffner a note claiming he had a bomb. When she initially dismissed it, Cooper calmly opened his briefcase, revealing red cylinders, wires, and a battery. Schaffner alerted the cockpit, and Cooper's demands were simple but precise:
+  const loadCaseFile = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-- $200,000 in twenty-dollar bills (approximately $1.3 million today)
-- Four parachutes (two primary, two reserve)
-- Fuel trucks standing by in Seattle to refuel the plane
+      const caseFilesService = getCaseFilesService()
+      const { caseFile: data, error } = await caseFilesService.getCaseFileBySlug(slug as string)
 
-## The Professional Approach
+      if (error) throw error
+      setCaseFile(data)
+    } catch (err) {
+      console.error('Failed to load case file:', err)
+      setError('Failed to load case file. Please try again later.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-What set Cooper apart from other hijackers was his demeanor. Witnesses described him as:
-- Polite and well-dressed in a business suit and black tie
-- Calm and collected throughout the ordeal
-- Knowledgeable about aviation terminology
-- Ordering bourbon and soda while waiting for his demands to be met
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !caseFile || !newComment.trim()) return
 
-## The Escape
+    try {
+      setSubmittingComment(true)
+      const caseFilesService = getCaseFilesService()
+      const { error } = await caseFilesService.addComment(caseFile.id, newComment)
 
-After receiving the money and parachutes in Seattle, Cooper released the 36 passengers but kept several crew members aboard. He then issued specific flight instructions:
-- Fly toward Mexico City at low speed (approximately 200 mph)
-- Maintain low altitude (under 10,000 feet)
-- Configure the aircraft in a specific landing approach (gear down, flaps lowered)
+      if (error) throw error
+      setNewComment('')
+      loadCaseFile() // Reload to get the new comment
+    } catch (err) {
+      console.error('Failed to add comment:', err)
+      setError('Failed to add comment. Please try again later.')
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
 
-Around 8:00 PM, during a heavy rainstorm over southwestern Washington's dense forest, Cooper lowered the aircraft's aft stairs and jumped into the night. He was never seen again.
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent-yellow border-t-transparent"></div>
+      </div>
+    )
+  }
 
-## The Investigation
+  if (error || !caseFile) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <AlertTriangle className="h-16 w-16 text-accent-red mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-text-primary mb-2">Case File Not Found</h1>
+        <p className="text-text-muted mb-8">{error || 'This case file does not exist.'}</p>
+        <Button onClick={() => router.push('/case-files')}>
+          Return to Case Files
+        </Button>
+      </div>
+    )
+  }
 
-The FBI launched one of the longest-running investigations in its history, interviewing hundreds of suspects and following thousands of tips. Despite extensive searches of the terrain below the flight path, no trace of Cooper was found for nearly a decade.
+  const isLocked = caseFile.required_tier === 'investigator' && !isInvestigator
 
-## Physical Evidence
-
-In 1980, a young boy found $5,800 in deteriorating twenty-dollar bills along the Columbia River. The serial numbers matched those given to Cooper, providing the only confirmed physical evidence of the case.
-
-## Theories and Suspects
-
-Over the years, numerous suspects have been investigated:
-- **Richard Floyd McCoy**: A Vietnam veteran who executed a similar hijacking months later
-- **Robert Rackstraw**: A Green Beret with extensive paratrooper experience
-- **Kenneth Christiansen**: A Northwest Orient employee who resembled Cooper's description
-- **Sheridan Peterson**: A Boeing employee who allegedly confessed on his deathbed
-
-## The Mystery Continues
-
-The case officially remains unsolved. The FBI suspended active investigation in 2016 but continues to review significant physical evidence. The combination of Cooper's apparent aviation knowledge, calm demeanor, and successful escape has made this case legendary in American criminal folklore.
-
-Did Cooper survive the jump? Was he an experienced paratrooper? Or did the harsh weather and difficult terrain claim his life that November night? The mystery of D.B. Cooper continues to captivate investigators and the public alike.
-  `,
-  dateOccurred: '1971-11-24',
-  location: 'Portland, OR to Seattle, WA',
-  status: 'cold_case',
-  difficultyLevel: 'beginner',
-  requiredTier: 'free',
-  featuredImageUrl: null,
-  audioUrl: null,
-  viewCount: 892,
-  createdAt: '2024-01-15',
-  updatedAt: '2024-01-15',
-  published: true,
-  tags: ['Hijacking', 'FBI', 'Mystery', 'Aviation', 'Unsolved']
-};
-
-const statusColors = {
-  cold_case: 'bg-accent-red/20 text-accent-red',
-  active: 'bg-accent-orange/20 text-accent-orange',
-  solved: 'bg-member-gold/20 text-member-gold',
-  closed: 'bg-text-muted/20 text-text-muted'
-};
-
-const difficultyColors = {
-  beginner: 'bg-member-silver/20 text-member-silver',
-  intermediate: 'bg-accent-yellow/20 text-accent-yellow',
-  advanced: 'bg-accent-red/20 text-accent-red'
-};
-
-export default async function CaseFilePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
   return (
-    <div className="min-h-screen px-4 py-8">
-      <div className="container mx-auto max-w-4xl">
-        {/* Back Button */}
-        <Link 
-          href="/case-files"
-          className="inline-flex items-center gap-2 text-accent-yellow hover:text-accent-yellow/80 mb-8 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Case Files
-        </Link>
-
-        {/* Case Header */}
-        <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-8 mb-8 border border-border-primary">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Case Image */}
-            <div className="lg:w-1/3">
-              <div className="aspect-square bg-gradient-to-br from-accent-orange/20 to-bg-primary rounded-lg flex items-center justify-center">
-                <div className="text-8xl opacity-30">✈️</div>
-              </div>
-            </div>
-
-            {/* Case Info */}
-            <div className="lg:w-2/3">
-                             <div className="flex flex-wrap gap-2 mb-4">
-                 <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${statusColors[caseFileData.status as keyof typeof statusColors]}`}>
-                   {caseFileData.status.replace('_', ' ')}
-                 </span>
-                 <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${difficultyColors[caseFileData.difficultyLevel as keyof typeof difficultyColors]}`}>
-                   {caseFileData.difficultyLevel}
-                 </span>
-                <span className="bg-member-silver/20 text-member-silver px-3 py-1 rounded-full text-sm font-semibold">
-                  FREE CASE
-                </span>
-              </div>
-
-              <h1 className="text-4xl font-display font-bold mb-3 text-shadow-crime">
-                {caseFileData.title}
-              </h1>
-              
-              {caseFileData.subtitle && (
-                <p className="text-xl text-accent-orange font-medium mb-4">
-                  {caseFileData.subtitle}
-                </p>
-              )}
-
-              <p className="text-text-muted mb-6 text-lg">
-                {caseFileData.summary}
+    <div className="min-h-screen">
+      {/* Premium Content Banner */}
+      {isLocked && (
+        <div className="bg-accent-yellow/10 border-y border-accent-yellow/20">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Lock className="h-5 w-5 text-accent-yellow" />
+              <p className="text-accent-yellow font-medium">
+                This is a premium case file. Upgrade to access full details.
               </p>
-
-              {/* Case Metadata */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="flex items-center text-text-secondary">
-                  <Calendar className="w-5 h-5 mr-2 text-accent-orange" />
-                  <div>
-                    <div className="text-sm text-text-muted">Date Occurred</div>
-                    <div className="font-semibold">{new Date(caseFileData.dateOccurred).toLocaleDateString()}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center text-text-secondary">
-                  <MapPin className="w-5 h-5 mr-2 text-accent-orange" />
-                  <div>
-                    <div className="text-sm text-text-muted">Location</div>
-                    <div className="font-semibold">{caseFileData.location}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center text-text-secondary">
-                  <Eye className="w-5 h-5 mr-2 text-accent-orange" />
-                  <div>
-                    <div className="text-sm text-text-muted">Views</div>
-                    <div className="font-semibold">{caseFileData.viewCount.toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4">
-                <button className="bg-accent-yellow hover:bg-accent-yellow/80 text-bg-primary px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                  <Volume2 className="w-5 h-5" />
-                  Play Audio (Premium)
-                </button>
-                <button className="border border-accent-yellow hover:bg-accent-yellow/10 text-accent-yellow px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                  <Download className="w-5 h-5" />
-                  Download PDF (Premium)
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Case Content */}
-        <div className="bg-bg-tertiary/60 backdrop-blur-sm rounded-lg p-8 mb-8 border border-border-primary">
-          <div className="prose prose-invert max-w-none">
-            {caseFileData.content.split('\n\n').map((paragraph, index) => {
-              if (paragraph.startsWith('## ')) {
-                return (
-                  <h2 key={index} className="text-2xl font-display font-bold mb-4 mt-8 text-accent-yellow">
-                    {paragraph.replace('## ', '')}
-                  </h2>
-                );
-              } else if (paragraph.startsWith('- **')) {
-                // Handle bullet points with bold names
-                return (
-                  <div key={index} className="mb-2 pl-4">
-                    <div className="text-text-secondary" dangerouslySetInnerHTML={{
-                      __html: paragraph.replace(/- \*\*(.*?)\*\*: (.*)/g, '• <strong class="text-accent-orange">$1</strong>: $2')
-                    }} />
-                  </div>
-                );
-              } else if (paragraph.startsWith('- ')) {
-                return (
-                  <div key={index} className="mb-2 pl-4 text-text-secondary">
-                    {paragraph.replace('- ', '• ')}
-                  </div>
-                );
-              } else {
-                return (
-                  <p key={index} className="mb-4 text-text-secondary leading-relaxed">
-                    {paragraph}
-                  </p>
-                );
-              }
-            })}
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-border-primary">
-          <h3 className="text-lg font-semibold mb-4">Case Tags</h3>
-          <div className="flex flex-wrap gap-2">
-            {caseFileData.tags.map((tag) => (
-              <span 
-                key={tag}
-                className="bg-bg-tertiary text-text-muted px-3 py-2 rounded-lg text-sm border border-border-primary hover:border-accent-yellow transition-colors cursor-pointer"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Premium Upgrade CTA */}
-        <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-8 text-center border border-accent-yellow">
-          <h2 className="text-3xl font-display font-bold mb-4">
-            Want More Cases Like This?
-          </h2>
-          <p className="text-xl text-text-muted mb-6 max-w-2xl mx-auto">
-            Unlock our complete archive of detailed case files, audio narrations, evidence galleries, and join exclusive community discussions.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/membership"
-              className="bg-accent-red hover:bg-accent-red/80 text-white px-8 py-4 rounded-lg font-bold text-lg transition-colors inline-flex items-center gap-2 member-badge-glow"
+            <Button
+              onClick={() => router.push('/membership')}
+              className="bg-accent-yellow hover:bg-accent-yellow/90 text-bg-primary"
             >
               Become an Investigator
-              <Users className="w-6 h-6" />
-            </Link>
-            <Link 
-              href="/case-files"
-              className="border border-border-primary hover:border-accent-yellow text-text-primary px-8 py-4 rounded-lg font-semibold transition-colors"
-            >
-              Browse More Cases
-            </Link>
+            </Button>
           </div>
         </div>
-      </div>
+      )}
+
+      <article className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <span className="px-3 py-1 rounded-full text-sm font-medium capitalize bg-bg-secondary text-text-muted">
+              {caseFile.difficulty_level}
+            </span>
+            {caseFile.audio_url && (
+              <span className="flex items-center gap-2 text-sm text-accent-yellow">
+                <Star className="h-4 w-4" />
+                Audio Available
+              </span>
+            )}
+          </div>
+
+          <h1 className="text-4xl font-bold text-text-primary mb-4">
+            {caseFile.title}
+          </h1>
+
+          <div className="flex items-center gap-6 text-sm text-text-muted mb-6">
+            <span className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {new Date(caseFile.created_at).toLocaleDateString()}
+            </span>
+            {caseFile.tags && caseFile.tags.length > 0 && (
+              <span className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                {caseFile.tags.map(tag => tag.name).join(', ')}
+              </span>
+            )}
+          </div>
+
+          <p className="text-lg text-text-muted">
+            {caseFile.summary}
+          </p>
+        </header>
+
+        {/* Content */}
+        <div className="prose prose-invert max-w-none">
+          {isLocked ? (
+            <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-8 text-center border border-border-primary">
+              <Lock className="h-12 w-12 text-accent-yellow mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-4">Premium Content</h2>
+              <p className="text-text-muted mb-6">
+                Join our Investigator tier to access the complete case file, including:
+                <br />
+                Detailed timeline, evidence analysis, expert insights, and more.
+              </p>
+              <Button
+                onClick={() => router.push('/membership')}
+                className="bg-accent-yellow hover:bg-accent-yellow/90 text-bg-primary"
+              >
+                Upgrade to Access
+              </Button>
+            </div>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: caseFile.content }} />
+          )}
+        </div>
+
+        {/* Comments Section */}
+        {!isLocked && (
+          <section className="mt-12 border-t border-border-primary pt-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <MessageSquare className="h-6 w-6" />
+              Discussion
+            </h2>
+            
+            {/* Comment Form */}
+            {user ? (
+              <form onSubmit={handleSubmitComment} className="mb-8">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    placeholder="Add your thoughts..."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={submittingComment || !newComment.trim()}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {submittingComment ? 'Sending...' : 'Send'}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-4 mb-8 text-center">
+                <p className="text-text-muted">
+                  Please <button onClick={() => router.push('/auth')} className="text-accent-yellow hover:underline">sign in</button> to join the discussion.
+                </p>
+              </div>
+            )}
+
+            {/* Comments List */}
+            <div className="space-y-6">
+              {caseFile.comments && caseFile.comments.length > 0 ? (
+                caseFile.comments.map(comment => (
+                  <div
+                    key={comment.id}
+                    className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-4 border border-border-primary"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-text-primary">
+                        {comment.user?.display_name || comment.user?.email}
+                      </span>
+                      <span className="text-sm text-text-muted">
+                        {new Date(comment.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-text-muted">{comment.content}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-text-muted py-8">
+                  No comments yet. Be the first to share your thoughts!
+                </p>
+              )}
+            </div>
+          </section>
+        )}
+      </article>
     </div>
   )
 } 

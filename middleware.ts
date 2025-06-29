@@ -1,46 +1,79 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import type { Database } from './types/database'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  // For now, we'll implement basic route protection
-  // This will be enhanced when we add Supabase authentication
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          // Set cookie for the request
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
 
-  // Protect chat routes - requires paid membership
-  if (req.nextUrl.pathname.startsWith('/chat')) {
-    // Redirect to membership page if accessing chat without authentication
-    return NextResponse.redirect(new URL('/membership', req.url))
+          // Set cookie for the response
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: any) {
+          // Remove cookie from request
+          request.cookies.delete(name)
+
+          // Remove cookie from response
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.delete(name)
+        },
+      },
+    }
+  )
+
+  // Refresh session if expired - required for Server Components
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If we have a user, ensure their session is valid
+  if (user) {
+    await supabase.auth.getSession()
   }
 
-  // Protect admin routes
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    // Redirect to home if accessing admin without proper permissions
-    return NextResponse.redirect(new URL('/', req.url))
-  }
-
-  // Protect premium case file content
-  if (req.nextUrl.pathname.startsWith('/case-files/') && 
-      req.nextUrl.searchParams.get('premium') === 'true') {
-    // Redirect to membership page for premium content
-    return NextResponse.redirect(new URL('/membership?upgrade=premium', req.url))
-  }
-
-  return res
+  return response
 }
 
+// Ensure middleware runs on auth-related paths
 export const config = {
   matcher: [
-    '/chat/:path*', 
-    '/case-files/:path*', 
-    '/admin/:path*',
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ]
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 } 

@@ -13,76 +13,37 @@ interface AuthFormProps {
 }
 
 export function AuthForms({ mode, onToggleMode, onClose }: AuthFormProps) {
-  const { signIn, signUp, loading } = useAuth()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    displayName: '',
-    confirmPassword: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    setError(null)
-  }
-
-  const validateForm = () => {
-    if (!formData.email || !formData.password) {
-      setError('Email and password are required')
-      return false
-    }
-
-    if (mode === 'signup') {
-      if (!formData.displayName) {
-        setError('Display name is required')
-        return false
-      }
-      
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match')
-        return false
-      }
-
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters')
-        return false
-      }
-    }
-
-    return true
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { signIn, signUp } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!validateForm()) return
+    if (isSubmitting) return // Prevent multiple submissions
 
-    setIsLoading(true)
     setError(null)
+    setIsSubmitting(true)
 
     try {
-      let result
-      
       if (mode === 'signin') {
-        result = await signIn(formData.email, formData.password)
+        const { error } = await signIn(email, password)
+        if (error) throw error
       } else {
-        result = await signUp(formData.email, formData.password, formData.displayName)
+        const { error } = await signUp(email, password, displayName)
+        if (error) throw error
       }
 
-      if (result.error) {
-        setError(result.error.message || 'An error occurred')
-      } else {
-        // Success - close modal if provided
-        if (onClose) onClose()
+      // Only call onClose if no error occurred and it exists
+      if (onClose) {
+        onClose()
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -112,130 +73,87 @@ export function AuthForms({ mode, onToggleMode, onClose }: AuthFormProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Display Name (Signup only) */}
           {mode === 'signup' && (
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-text-secondary mb-2">
-                Investigator Name
+              <label htmlFor="displayName" className="block text-sm font-medium mb-2">
+                Display Name
               </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-                <Input
-                  id="displayName"
-                  name="displayName"
-                  type="text"
-                  placeholder="Choose your investigator name"
-                  value={formData.displayName}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                  required
-                />
-              </div>
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-4 py-2 bg-bg-tertiary/60 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-yellow"
+                placeholder="Enter your display name"
+                disabled={isSubmitting}
+              />
             </div>
           )}
 
-          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
+            <label htmlFor="email" className="block text-sm font-medium mb-2">
               Email Address
             </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="pl-10"
-                required
-              />
-            </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-bg-tertiary/60 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-yellow"
+              placeholder="Enter your email"
+              required
+              disabled={isSubmitting}
+            />
           </div>
 
-          {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
+            <label htmlFor="password" className="block text-sm font-medium mb-2">
               Password
             </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="pl-10 pr-10"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-accent-yellow"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 bg-bg-tertiary/60 border border-border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-yellow"
+              placeholder="Enter your password"
+              required
+              disabled={isSubmitting}
+            />
           </div>
 
-          {/* Confirm Password (Signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-secondary mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <Button
+          <button
             type="submit"
-            variant="premium"
-            size="lg"
-            className="w-full"
-            disabled={isLoading || loading}
+            disabled={isSubmitting}
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+              isSubmitting
+                ? 'bg-accent-yellow/50 cursor-not-allowed'
+                : 'bg-accent-yellow hover:bg-accent-yellow/80'
+            }`}
           >
-            {isLoading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-          </Button>
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Please wait...</span>
+              </div>
+            ) : (
+              mode === 'signin' ? 'Sign In' : 'Create Account'
+            )}
+          </button>
         </form>
 
         {/* Toggle Mode */}
         <div className="mt-6 text-center">
-          <p className="text-text-muted">
-            {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={onToggleMode}
-              className="text-accent-yellow hover:text-accent-yellow/80 font-semibold"
-            >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
+          <button
+            onClick={onToggleMode}
+            disabled={isSubmitting}
+            className="text-accent-yellow hover:text-accent-yellow/80 transition-colors"
+          >
+            {mode === 'signin'
+              ? "Don't have an account? Sign up"
+              : 'Already have an account? Sign in'}
+          </button>
         </div>
-
-        {/* Additional Info for Signup */}
-        {mode === 'signup' && (
-          <div className="mt-6 p-4 bg-bg-tertiary/60 rounded-lg border border-border-primary">
-            <p className="text-sm text-text-muted text-center">
-              By creating an account, you'll get access to our community discussions and be able to upgrade to premium features like exclusive case files and audio narrations.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

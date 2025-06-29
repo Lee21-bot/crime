@@ -1,11 +1,10 @@
-import { createClient } from './supabase'
-import { AuthError, Session, User } from '@supabase/supabase-js'
+'use client'
 
-export interface AuthState {
-  user: User | null
-  session: Session | null
-  loading: boolean
-}
+import { createClient } from './supabase/client'
+import { AuthError, Session, User, AuthChangeEvent } from '@supabase/supabase-js'
+
+// Get the single Supabase client instance
+const supabase = createClient()
 
 export interface SignUpData {
   email: string
@@ -18,183 +17,135 @@ export interface SignInData {
   password: string
 }
 
-class AuthService {
-  private supabase = createClient()
+// Re-export the Supabase client for other parts of the app to use
+export const authSupabase = supabase
 
-  async signUp({ email, password, displayName }: SignUpData) {
-    try {
-      const { data, error } = await this.supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: displayName || email.split('@')[0],
-          }
-        }
+export const getAuthService = () => {
+  if (typeof window === 'undefined') {
+    // This is a simple guard. The functions below should only be called on the client.
+    console.warn('AuthService is being accessed in a non-browser environment.')
+    // Return a mock object or throw an error if you want to be stricter
+    return {
+      signUp: async () => ({ user: null, session: null, error: new Error('Cannot sign up on the server') }),
+      signIn: async () => ({ user: null, session: null, error: new Error('Cannot sign in on the server') }),
+      signOut: async () => ({ error: null }),
+      resetPassword: async () => ({ error: null }),
+      updatePassword: async () => ({ error: null }),
+      getSession: async () => ({ session: null, error: null }),
+      getUser: async () => ({ user: null, error: null }),
+      getUserProfile: async () => ({ profile: null, error: new Error('Cannot get profile on the server') }),
+      updateUserProfile: async () => ({ profile: null, error: new Error('Cannot update profile on the server') }),
+      getUserSubscription: async () => ({ subscription: null, error: new Error('Cannot get subscription on the server') }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    }
+  }
+
+  // --- Core Auth Functions ---
+
+  const signUp = async ({ email, password, displayName }: SignUpData) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName || email.split('@')[0] },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (data.user) {
+      await createUserProfile(data.user.id, {
+        display_name: displayName || email.split('@')[0],
       })
-
-      if (error) throw error
-
-      // Create user profile
-      if (data.user) {
-        await this.createUserProfile(data.user.id, {
-          display_name: displayName || email.split('@')[0],
-          email: data.user.email || email
-        })
-      }
-
-      return { user: data.user, session: data.session, error: null }
-    } catch (error) {
-      return { user: null, session: null, error: error as AuthError }
     }
+    return { user: data.user, session: data.session, error }
   }
 
-  async signIn({ email, password }: SignInData) {
-    try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) throw error
-      return { user: data.user, session: data.session, error: null }
-    } catch (error) {
-      return { user: null, session: null, error: error as AuthError }
-    }
+  const signIn = async ({ email, password }: SignInData) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    return { user: data.user, session: data.session, error }
   }
 
-  async signOut() {
-    try {
-      const { error } = await this.supabase.auth.signOut()
-      if (error) throw error
-      return { error: null }
-    } catch (error) {
-      return { error: error as AuthError }
-    }
+  const signOut = async () => {
+    return await supabase.auth.signOut()
   }
 
-  async resetPassword(email: string) {
-    try {
-      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
-      })
-      if (error) throw error
-      return { error: null }
-    } catch (error) {
-      return { error: error as AuthError }
-    }
-  }
-
-  async updatePassword(newPassword: string) {
-    try {
-      const { error } = await this.supabase.auth.updateUser({
-        password: newPassword
-      })
-      if (error) throw error
-      return { error: null }
-    } catch (error) {
-      return { error: error as AuthError }
-    }
-  }
-
-  async getSession() {
-    try {
-      const { data, error } = await this.supabase.auth.getSession()
-      if (error) throw error
-      return { session: data.session, error: null }
-    } catch (error) {
-      return { session: null, error: error as AuthError }
-    }
-  }
-
-  async getUser() {
-    try {
-      const { data, error } = await this.supabase.auth.getUser()
-      if (error) throw error
-      return { user: data.user, error: null }
-    } catch (error) {
-      return { user: null, error: error as AuthError }
-    }
-  }
-
-  async getUserProfile(userId: string) {
-    try {
-      const { data, error } = await this.supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      if (error) throw error
-      return { profile: data, error: null }
-    } catch (error) {
-      return { profile: null, error }
-    }
-  }
-
-  async updateUserProfile(userId: string, updates: {
-    display_name?: string
-    avatar_url?: string
-    bio?: string
-  }) {
-    try {
-      const { data, error } = await this.supabase
-        .from('user_profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        .select()
-        .single()
-
-      if (error) throw error
-      return { profile: data, error: null }
-    } catch (error) {
-      return { profile: null, error }
-    }
-  }
-
-  async getUserSubscription(userId: string) {
-    try {
-      const { data, error } = await this.supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .single()
-
-      return { subscription: data, error }
-    } catch (error) {
-      return { subscription: null, error }
-    }
-  }
-
-  private async createUserProfile(userId: string, profileData: {
-    display_name: string
-    email: string
-  }) {
-    try {
-      const { error } = await this.supabase
-        .from('user_profiles')
-        .insert({
-          user_id: userId,
-          display_name: profileData.display_name,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-
-      if (error) throw error
-    } catch (error) {
-      console.error('Error creating user profile:', error)
-    }
-  }
-
-  onAuthStateChange(callback: (session: Session | null) => void) {
-    return this.supabase.auth.onAuthStateChange((event, session) => {
-      callback(session)
+  const resetPassword = async (email: string) => {
+    return await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     })
   }
-}
+  
+  const updatePassword = async (newPassword: string) => {
+    return await supabase.auth.updateUser({ password: newPassword })
+  }
 
-export const authService = new AuthService() 
+  // --- Session and User Data ---
+
+  const getSession = async () => {
+    const { data, error } = await supabase.auth.getSession()
+    return { session: data.session, error }
+  }
+
+  const getUser = async () => {
+    const { data, error } = await supabase.auth.getUser()
+    return { user: data.user, error }
+  }
+
+  // --- Profile and Subscription Data ---
+
+  const getUserProfile = async (userId: string) => {
+    const { data, error } = await supabase.from('user_profiles').select('*').eq('user_id', userId).single()
+    return { profile: data, error }
+  }
+
+  const updateUserProfile = async (userId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .select()
+      .single()
+    return { profile: data, error }
+  }
+
+  const getUserSubscription = async (userId: string) => {
+    const { data, error } = await supabase.from('user_subscriptions').select('*').eq('user_id', userId).single()
+    return { subscription: data, error }
+  }
+
+  const createUserProfile = async (userId: string, profileData: { display_name: string }) => {
+    const { error } = await supabase.from('user_profiles').insert({ user_id: userId, ...profileData })
+    return { error }
+  }
+  
+  const onAuthStateChange = (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
+    try {
+      return supabase.auth.onAuthStateChange(callback)
+    } catch (error) {
+      console.warn('Failed to create auth state change subscription:', error)
+      // Return a dummy subscription that can be unsubscribed
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      }
+    }
+  }
+
+  // --- Export all functions ---
+
+  return {
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    getSession,
+    getUser,
+    getUserProfile,
+    updateUserProfile,
+    getUserSubscription,
+    onAuthStateChange,
+  }
+} 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -13,14 +13,22 @@ import {
   Calendar,
   Eye,
   TrendingUp,
-  Star
+  Star,
+  Edit,
+  Save,
+  X
 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { useAuth } from '../../providers/auth-provider'
+import { Input } from '../../components/ui/input'
+import { createClient } from '../../lib/supabase/client'
 
 export default function DashboardPage() {
-  const { user, userProfile, userSubscription, isInvestigator, signOut, loading } = useAuth()
+  const { user, userProfile, userSubscription, isInvestigator, signOut, loading, refreshUserData } = useAuth()
   const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
+  const [displayName, setDisplayName] = useState(userProfile?.display_name || '')
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,6 +40,63 @@ export default function DashboardPage() {
     await signOut()
     router.push('/')
   }
+
+  const handleUpdateProfile = async () => {
+    if (!user || !displayName.trim()) return
+    
+    setIsUpdating(true)
+    try {
+      const supabase = createClient()
+      
+      console.log('Attempting to update profile for user:', user.id)
+      console.log('New display name:', displayName.trim())
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          display_name: displayName.trim(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+        .select()
+
+      console.log('Update result:', { data, error })
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        alert(`Failed to update profile: ${error.message}`)
+        return
+      }
+
+      console.log('Profile updated successfully:', data)
+
+      // Refresh the user profile in the auth context
+      await refreshUserData()
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to update profile: ${errorMessage}`)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setDisplayName(userProfile?.display_name || '')
+    setIsEditing(false)
+  }
+
+  // Update display name when userProfile changes
+  useEffect(() => {
+    setDisplayName(userProfile?.display_name || '')
+  }, [userProfile])
 
   if (loading) {
     return (
@@ -259,6 +324,42 @@ export default function DashboardPage() {
                   <p className="font-medium">{isInvestigator ? 'Investigator' : 'Visitor'}</p>
                 </div>
               </div>
+
+              {isEditing ? (
+                <div className="mt-4">
+                  <Input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter new display name"
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleUpdateProfile}
+                      disabled={isUpdating}
+                    >
+                      <Save className="w-4 h-4" />
+                      {isUpdating ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleCancelEdit}
+                      disabled={isUpdating}
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <Button variant="outline" onClick={() => setIsEditing(true)}>
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
