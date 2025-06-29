@@ -11,6 +11,18 @@ interface ChatWindowProps {
   channelName: string
 }
 
+// Utility: get contrast color (white or black) for a given hex background
+function getContrastYIQ(hexcolor: string) {
+  if (!hexcolor) return 'white';
+  let hex = hexcolor.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+  const r = parseInt(hex.substr(0,2),16);
+  const g = parseInt(hex.substr(2,2),16);
+  const b = parseInt(hex.substr(4,2),16);
+  const yiq = ((r*299)+(g*587)+(b*114))/1000;
+  return (yiq >= 180) ? 'black' : 'white';
+}
+
 export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [typingUsers, setTypingUsers] = useState<TypingIndicator[]>([])
@@ -22,6 +34,17 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
   const chatService = new ChatService()
   const { user, loading, userProfile, isInvestigator } = useAuth()
   const isAdmin = user?.email?.endsWith('@admin.com') || false
+
+  // Build a map of user_id to profile (for color lookup)
+  const userProfilesMap = React.useMemo(() => {
+    const map: Record<string, { color?: string }> = {}
+    onlineUsers.forEach(u => {
+      if (u.user_id && u.color) map[u.user_id] = { color: u.color }
+    })
+    // Add current user
+    if (user && userProfile?.color) map[user.id] = { color: userProfile.color }
+    return map
+  }, [onlineUsers, user, userProfile])
 
   // Check if user is at bottom of messages
   const checkIfAtBottom = () => {
@@ -125,16 +148,16 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
     })
 
     // Set initial presence
-    chatService.updatePresence(user.id, user.email?.split('@')[0] || 'Anonymous')
+    chatService.updatePresence(user.id, userProfile?.display_name || user.email || 'Anonymous')
 
     // Update presence every 4 minutes to stay "online"
     const presenceInterval = setInterval(() => {
-      chatService.updatePresence(user.id, user.email?.split('@')[0] || 'Anonymous')
+      chatService.updatePresence(user.id, userProfile?.display_name || user.email || 'Anonymous')
     }, 4 * 60 * 1000)
 
     // Set offline status when leaving
     const handleBeforeUnload = () => {
-      chatService.updatePresence(user.id, user.email?.split('@')[0] || 'Anonymous', 'offline')
+      chatService.updatePresence(user.id, userProfile?.display_name || user.email || 'Anonymous', 'offline')
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
 
@@ -145,7 +168,7 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
       clearInterval(presenceInterval)
       window.removeEventListener('beforeunload', handleBeforeUnload)
       typingSubscription.unsubscribe()
-      chatService.updatePresence(user.id, user.email?.split('@')[0] || 'Anonymous', 'offline')
+      chatService.updatePresence(user.id, userProfile?.display_name || user.email || 'Anonymous', 'offline')
     }
   }, [channelId, user, loading])
 
@@ -158,7 +181,7 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
       await chatService.setTypingStatus(
         channelId,
         user.id,
-        userProfile?.display_name || user.email?.split('@')[0] || 'Anonymous',
+        userProfile?.display_name || user.email || 'Anonymous',
         value.length > 0
       )
     }
@@ -173,7 +196,7 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
         channelId,
         newMessage,
         user.id,
-        user.email?.split('@')[0] || 'Anonymous'
+        userProfile?.display_name || user.email || 'Anonymous'
       ) as { data: any[]; error: any };
       if (error) {
         console.error('Supabase insert error:', error)
@@ -183,7 +206,7 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
         const newMessageObj = {
           id: data && data[0]?.id ? data[0].id : Math.random().toString(36),
           user_id: user.id,
-          username: userProfile?.display_name || user.email?.split('@')[0] || 'Anonymous',
+          username: userProfile?.display_name || user.email || 'Anonymous',
           content: newMessage,
           created_at: new Date().toISOString(),
           channel_id: channelId,
@@ -204,7 +227,7 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
         setNewMessage('')
         // Force scroll to bottom when user sends a message
         setTimeout(() => scrollToBottom('smooth'), 100)
-        await chatService.setTypingStatus(channelId, user.id, userProfile?.display_name || user.email?.split('@')[0] || 'Anonymous', false)
+        await chatService.setTypingStatus(channelId, user.id, userProfile?.display_name || user.email || 'Anonymous', false)
       }
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -227,7 +250,13 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
   }
 
   // Generate a consistent color for each user based on their username
-  const getUserColor = (username: string) => {
+  const getUserColor = (username: string, userId?: string) => {
+    // If this is the current user and they have a chosen color, use it
+    if (userId === user?.id && userProfile?.color) {
+      return `bg-[${userProfile.color}]`
+    }
+    
+    // Otherwise use hash-based color
     const colors = [
       'bg-red-600',
       'bg-blue-600', 
@@ -244,7 +273,13 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
     return colors[index]
   }
 
-  const getUserBorderColor = (username: string) => {
+  const getUserBorderColor = (username: string, userId?: string) => {
+    // If this is the current user and they have a chosen color, use it
+    if (userId === user?.id && userProfile?.color) {
+      return `border-[${userProfile.color}]`
+    }
+    
+    // Otherwise use hash-based color
     const colors = [
       'border-red-600',
       'border-blue-600', 
@@ -259,6 +294,14 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
     ]
     const index = username.charCodeAt(0) % colors.length
     return colors[index]
+  }
+
+  const getUserStyle = (username: string, userId?: string) => {
+    // If this is the current user and they have a chosen color, use it
+    if (userId === user?.id && userProfile?.color) {
+      return { backgroundColor: userProfile.color }
+    }
+    return {}
   }
 
   return (
@@ -296,41 +339,89 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
         </div>
       </div>
 
+      {/* Online Users List */}
+      <div className="px-4 pt-4 pb-2 flex flex-wrap gap-3 items-center border-b border-border-primary bg-bg-secondary/60">
+        {onlineUsers.length > 0 ? (
+          <>
+            <span className="text-sm text-text-muted mr-2 font-medium">Online:</span>
+            {onlineUsers.map((userObj) => {
+              const isCurrentUser = userObj.user_id === user?.id;
+              const avatarColor = isCurrentUser && userProfile?.color ? userProfile.color : undefined;
+              return (
+                <div key={userObj.id} className="flex items-center gap-1">
+                  <div 
+                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ${getUserColor(userObj.username, userObj.user_id)} ${getUserBorderColor(userObj.username, userObj.user_id)}`}
+                    style={{ backgroundColor: avatarColor, color: avatarColor ? getContrastYIQ(avatarColor) : undefined }}
+                    title={userObj.username}
+                    aria-label={userObj.username}
+                  >
+                    {userObj.username[0]?.toUpperCase() || '?'}
+                  </div>
+                  <span className="text-xs text-text-secondary font-medium max-w-[80px] truncate">{userObj.username}</span>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          <span className="text-sm text-text-muted">No one online</span>
+        )}
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-8 bg-transparent" ref={messagesContainerRef} onScroll={handleScroll}>
         {messages.map((message) => {
           const isOwn = message.user_id === user.id;
+          const senderColor = isOwn ? userProfile?.color : undefined;
+          const textContrastClass = senderColor
+            ? getContrastYIQ(senderColor) === 'black'
+              ? 'chat-bubble-text-black'
+              : 'chat-bubble-text-white'
+            : '';
           return (
-            <div key={message.id} className="flex items-start gap-3">
-              {/* User avatar/initial */}
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-sm ${getUserColor(message.username)} ${getUserBorderColor(message.username)}`}
-                title={message.username}
-                aria-label={message.username}
-              >
-                {message.username[0]?.toUpperCase() || '?'}
-              </div>
+            <div
+              key={message.id}
+              className={`flex items-start gap-3 w-full ${isOwn ? 'justify-end' : 'justify-start'}`}
+            >
+              {/* Avatar: left for others, right for own */}
+              {!isOwn && (
+                <div 
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-sm ${getUserColor(message.username, message.user_id)} ${getUserBorderColor(message.username, message.user_id)}`}
+                  style={getUserStyle(message.username, message.user_id)}
+                  title={message.username}
+                  aria-label={message.username}
+                >
+                  {message.username[0]?.toUpperCase() || '?'}
+                </div>
+              )}
               {/* Message bubble */}
               <div
                 className={
-                  `max-w-[60%] rounded-2xl px-5 py-3 shadow-md border ` +
+                  `max-w-[60%] rounded-2xl shadow-md border break-words ` +
                   (isOwn
-                    ? 'bg-accent-red/20 border-accent-red text-text-primary'
-                    : 'bg-bg-secondary/80 border-border-primary text-text-primary')
+                    ? (senderColor ? 'ml-auto text-right' : 'bg-accent-red/80 border-accent-red text-white ml-auto text-right')
+                    : 'bg-bg-secondary/80 border-border-primary mr-auto text-left')
                 }
-                style={{ fontSize: '1.25rem', lineHeight: '1.75rem' }}
+                style={{ 
+                  fontSize: '1.15rem', 
+                  lineHeight: '1.7rem', 
+                  padding: '1.15rem 1.5rem',
+                  ...(senderColor ? {
+                    backgroundColor: senderColor,
+                    borderColor: senderColor,
+                  } : {}),
+                }}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
                   <span className="text-xs text-text-muted">
                     {new Date(message.created_at).toLocaleTimeString()}
                   </span>
-                  {/* Only show moderation status if rejected */}
                   {message.moderation_status === 'rejected' && (
                     <span className="text-xs text-red-400" title={message.moderation_reason || ''}>
                       Removed by Moderator
                     </span>
                   )}
                 </div>
-                <p className="text-base" style={{ wordBreak: 'break-word' }}>
+                <p className={`text-base ${textContrastClass}`} style={{ wordBreak: 'break-word' }}>
                   {message.moderation_status === 'rejected' 
                     ? 'This message has been removed by a moderator.' 
                     : message.content}
@@ -355,6 +446,17 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
                   </div>
                 )}
               </div>
+              {/* Avatar: right for own */}
+              {isOwn && (
+                <div 
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-sm ${getUserColor(message.username, message.user_id)} ${getUserBorderColor(message.username, message.user_id)}`}
+                  style={getUserStyle(message.username, message.user_id)}
+                  title={message.username}
+                  aria-label={message.username}
+                >
+                  {message.username[0]?.toUpperCase() || '?'}
+                </div>
+              )}
             </div>
           )
         })}
@@ -363,12 +465,21 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
 
       {/* Typing Indicators */}
       {typingUsers.length > 0 && (
-        <div className="px-4 py-2 text-lg text-text-muted">
-          {typingUsers
-            .filter(t => t.user_id !== user.id)
-            .map(t => t.username)
-            .join(', ')}{' '}
-          {typingUsers.length === 1 ? 'is' : 'are'} typing...
+        <div className="px-4 py-2 flex items-center gap-2 text-lg text-text-muted border-t border-border-primary bg-bg-secondary/60">
+          {typingUsers.filter(t => t.user_id !== user.id).map(t => (
+            <div key={t.user_id} className="flex items-center gap-1">
+              <div 
+                className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ${getUserColor(t.username, t.user_id)} ${getUserBorderColor(t.username, t.user_id)}`}
+                style={getUserStyle(t.username, t.user_id)}
+                title={t.username}
+                aria-label={t.username}
+              >
+                {t.username[0]?.toUpperCase() || '?'}
+              </div>
+              <span className="text-xs font-medium">{t.username}</span>
+            </div>
+          ))}
+          <span className="ml-2 text-base font-normal">{typingUsers.length === 1 ? 'is typing...' : 'are typing...'}</span>
         </div>
       )}
 

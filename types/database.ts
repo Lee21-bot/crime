@@ -132,6 +132,7 @@ export interface Database {
           display_name: string
           bio: string | null
           avatar_url: string | null
+          color: string | null
           created_at: string
           updated_at: string
         }
@@ -141,6 +142,7 @@ export interface Database {
           display_name: string
           bio?: string | null
           avatar_url?: string | null
+          color?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -150,6 +152,7 @@ export interface Database {
           display_name?: string
           bio?: string | null
           avatar_url?: string | null
+          color?: string | null
           created_at?: string
           updated_at?: string
         }

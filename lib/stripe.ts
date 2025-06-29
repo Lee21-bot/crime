@@ -1,12 +1,12 @@
 import Stripe from 'stripe'
 
-// Initialize Stripe with secret key
+// Initialize Stripe with secret key (server-side only)
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-05-28.basil',
   typescript: true,
 })
 
-// Stripe price IDs (you'll need to create these in your Stripe dashboard)
+// Stripe price IDs (safe for client-side)
 export const STRIPE_PRICE_IDS = {
   INVESTIGATOR_MONTHLY: process.env.STRIPE_INVESTIGATOR_PRICE_ID || 'price_investigator_monthly',
   INVESTIGATOR_YEARLY: process.env.STRIPE_INVESTIGATOR_YEARLY_PRICE_ID || 'price_investigator_yearly',

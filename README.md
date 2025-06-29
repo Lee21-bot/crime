@@ -1,3 +1,25 @@
+# ShadowFiles/Crime (Stable Snapshot)
+
+**Stable Commit:** Profile update, chat UI, and RLS fixes (June 26, 2025)
+
+This commit is a stable restore point before further chat UI enhancements. Use this as a safe fallback if you need to revert any future changes.
+
+## What Works
+- User profile display name can be updated from the dashboard (with proper RLS and upsert conflict handling)
+- Chat UI is functional with channel switching, colored avatars, and message timestamps
+- Auth, membership, and dashboard flows are stable
+- Supabase RLS policies for `user_profiles` are set up correctly
+
+## What Was Fixed
+- Fixed missing `display_name` column in `user_profiles`
+- Fixed duplicate key errors on profile update by specifying `onConflict: 'user_id'` in upsert
+- Added/updated RLS policies for user profile editing
+- Improved chat UI and message display
+
+---
+
+_You can safely experiment with further chat UI improvements from this point._
+
 # ShadowFiles - True Crime Community
 
 A premium Next.js application for true crime enthusiasts featuring exclusive case files, member-only chat, audio narration, and subscription-based access tiers.
@@ -300,3 +322,82 @@ For support, email support@shadowfiles.community or join our Discord community.
 ---
 
 **ShadowFiles - Uncover the Truth** 🕵️‍♂️
+
+## Google AdSense Setup
+
+To enable Google AdSense for free tier users:
+
+1. **Get your Publisher ID** from Google AdSense
+2. **Add environment variable**:
+   ```bash
+   NEXT_PUBLIC_GOOGLE_ADSENSE_PUBLISHER_ID=ca-pub-YOUR_ACTUAL_PUBLISHER_ID
+   ```
+3. **Create ad units** in Google AdSense for these slots:
+   - `banner-ad-slot` (728x90)
+   - `inline-ad-slot` (300x250)
+   - `sidebar-ad-slot` (300x250)
+   - `leaderboard-ad-slot` (728x90)
+
+### Ad Placement
+
+- **Case Files Listing**: Banner ad at top, inline ad after first 6 case files
+- **Individual Case Files**: Inline ads before and after content
+- **Free Users Only**: Ads are automatically hidden for paid subscribers
+
+## Business Model
+
+- **Free Tier**: Access to case stories with Google ads
+- **Investigator Tier**: Ad-free experience + full chat access + color personalization
+
+## Tech Stack
+
+- **Frontend**: Next.js 14/15 with TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **Payments**: Stripe
+- **Styling**: Tailwind CSS
+- **Ads**: Google AdSense
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see `.env.example`)
+4. Run the development server: `npm run dev`
+
+## Environment Variables
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Stripe
+STRIPE_SECRET_KEY=your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=your_webhook_secret
+
+# Google AdSense
+NEXT_PUBLIC_GOOGLE_ADSENSE_PUBLISHER_ID=ca-pub-your_publisher_id
+```
+
+## Database Setup
+
+Run the SQL migrations in `supabase/migrations/` to set up the database schema.
+
+## Deployment
+
+The app is configured for deployment on Vercel with automatic database migrations.
+
+## Account Settings (Coming Soon)
+
+A dedicated Account Settings page will be available for users to manage their account and preferences. Planned features include:
+
+- **Change Password / Email:** Update your login credentials securely.
+- **Manage Connected Accounts (OAuth):** Link or unlink Google, GitHub, and other providers.
+- **Notification Preferences:** Control which email or in-app notifications you receive.
+- **Privacy/Security Options:** Manage visibility, two-factor authentication, and other privacy settings.
+- **Delete Account:** Permanently remove your account and data.
+- **Billing/Subscription Management:** View and manage your membership, payment methods, and invoices (existing membership page will be integrated).
+
+This page will be accessible from your dashboard and will consolidate all user account management features in one place.

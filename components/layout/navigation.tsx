@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { User, LogIn, Crown, MessageSquare, FileText } from 'lucide-react'
+import { User, LogIn, Crown, MessageSquare, FileText, Settings, Volume2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useAuth } from '../../providers/auth-provider'
 
 export function Navigation() {
-  const { user, userProfile, isInvestigator, loading } = useAuth()
+  const { user, userProfile, isInvestigator, isAdmin, loading } = useAuth()
   const pathname = usePathname()
 
   const isActive = (path: string) => pathname === path
@@ -35,6 +35,15 @@ export function Navigation() {
               Case Files
             </Link>
 
+            <Link 
+              href="/stories"
+              className={`text-base font-medium transition-colors hover:text-accent-yellow ${
+                isActive('/stories') ? 'text-accent-yellow' : 'text-text-secondary'
+              }`}
+            >
+              Audio Stories
+            </Link>
+
             {isInvestigator && (
               <Link 
                 href="/chat"
@@ -43,6 +52,17 @@ export function Navigation() {
                 }`}
               >
                 Member Chat
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link 
+                href="/admin/audio"
+                className={`text-base font-medium transition-colors hover:text-accent-yellow ${
+                  isActive('/admin/audio') ? 'text-accent-yellow' : 'text-text-secondary'
+                }`}
+              >
+                Audio Episodes
               </Link>
             )}
 
@@ -63,7 +83,13 @@ export function Navigation() {
             ) : user ? (
               <div className="flex items-center space-x-4">
                 {/* Member Badge */}
-                {isInvestigator && (
+                {isAdmin && (
+                  <div className="flex items-center space-x-1 bg-red-900/20 px-2 py-1 rounded-full">
+                    <Settings className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400 text-sm font-semibold">Admin</span>
+                  </div>
+                )}
+                {isInvestigator && !isAdmin && (
                   <div className="flex items-center space-x-1 bg-member-gold/20 px-2 py-1 rounded-full member-badge-glow">
                     <Crown className="w-4 h-4 text-member-gold" />
                     <span className="text-member-gold text-sm font-semibold">Investigator</span>
@@ -106,6 +132,18 @@ export function Navigation() {
               <span>Case Files</span>
             </Link>
 
+            <Link 
+              href="/stories"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/stories') 
+                  ? 'bg-accent-yellow/10 text-accent-yellow' 
+                  : 'text-text-secondary hover:text-accent-yellow hover:bg-accent-yellow/5'
+              }`}
+            >
+              <Volume2 className="w-4 h-4" />
+              <span>Audio Stories</span>
+            </Link>
+
             {isInvestigator && (
               <Link 
                 href="/chat"
@@ -117,6 +155,20 @@ export function Navigation() {
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Member Chat</span>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link 
+                href="/admin/audio"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/admin/audio') 
+                    ? 'bg-accent-yellow/10 text-accent-yellow' 
+                    : 'text-text-secondary hover:text-accent-yellow hover:bg-accent-yellow/5'
+                }`}
+              >
+                <Volume2 className="w-4 h-4" />
+                <span>Audio Episodes</span>
               </Link>
             )}
 

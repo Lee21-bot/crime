@@ -1,5 +1,5 @@
 import { createClient } from '../../../lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { type EmailOtpType } from '@supabase/supabase-js'
 
 export async function GET(request: Request) {
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/'
 
   if (token_hash && type) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
@@ -21,4 +21,23 @@ export async function GET(request: Request) {
 
   // Return the user to an error page with some instructions
   return NextResponse.redirect(new URL('/auth/error', request.url))
+}
+
+export async function POST(request: NextRequest) {
+  const { email, token, type } = await request.json()
+
+  if (email && token) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: type as any,
+    })
+
+    if (!error) {
+      return NextResponse.json({ message: 'Email confirmed' })
+    }
+  }
+
+  return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 } 

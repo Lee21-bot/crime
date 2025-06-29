@@ -9,6 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Custom palette: these reference CSS variables defined in :root in app/globals.css
+        // Do not remove or replace with Tailwind defaults unless you want to lose the custom theme.
         background: "rgb(var(--bg-primary) / <alpha-value>)",
         foreground: "rgb(var(--text-primary) / <alpha-value>)",
         "bg-primary": "rgb(var(--bg-primary) / <alpha-value>)",

@@ -1,11 +1,120 @@
+'use client'
+
 import Link from 'next/link'
-import { Check, ArrowRight, Users, FileText, Volume2, Download, MessageCircle, Search } from 'lucide-react'
+import { Check, ArrowRight, Users, FileText, Volume2, Download, MessageCircle, Search, X } from 'lucide-react'
 import { MEMBERSHIP_TIERS } from '../../lib/subscription/membership'
+import { useStripeCheckout } from '../../hooks/use-stripe-checkout'
+import { useAuth } from '../../providers/auth-provider'
+import { STRIPE_PRICE_IDS } from '../../lib/stripe-client'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 export default function MembershipPage() {
+  const { createCheckoutSession, loading, error } = useStripeCheckout()
+  const { user, userSubscription, isInvestigator } = useAuth()
+  const searchParams = useSearchParams()
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [showCancelMessage, setShowCancelMessage] = useState(false)
+  const router = useRouter()
+
+  // Handle URL parameters for success/cancel messages
+  useEffect(() => {
+    const success = searchParams.get('success')
+    const canceled = searchParams.get('canceled')
+    
+    if (success === 'true') {
+      setShowSuccessMessage(true)
+      // Auto-hide after 10 seconds
+      setTimeout(() => setShowSuccessMessage(false), 10000)
+    }
+    
+    if (canceled === 'true') {
+      setShowCancelMessage(true)
+      // Auto-hide after 10 seconds
+      setTimeout(() => setShowCancelMessage(false), 10000)
+    }
+  }, [searchParams])
+
+  const handleUpgradeToInvestigator = async () => {
+    if (!user) {
+      // Redirect to auth if not logged in
+      window.location.href = '/auth'
+      return
+    }
+
+    try {
+      await createCheckoutSession({
+        priceId: STRIPE_PRICE_IDS.INVESTIGATOR_MONTHLY,
+        successUrl: `${window.location.origin}/membership?success=true`,
+        cancelUrl: `${window.location.origin}/membership?canceled=true`,
+      })
+    } catch (err) {
+      console.error('Checkout error:', err)
+    }
+  }
+
+  const handleFinalCTA = async () => {
+    if (!user) {
+      // Redirect to auth if not logged in
+      window.location.href = '/auth'
+      return
+    }
+
+    // If user is already an investigator, redirect to dashboard
+    if (isInvestigator) {
+      window.location.href = '/dashboard'
+      return
+    }
+
+    // Otherwise, start checkout
+    await handleUpgradeToInvestigator()
+  }
+
   return (
     <div className="min-h-screen px-4 py-16">
       <div className="container mx-auto">
+        {/* Success/Cancel Messages */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-green-900/90 backdrop-blur-sm border border-green-500 rounded-lg p-4 max-w-md">
+            <div className="flex items-start gap-3">
+              <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-300 mb-1">Welcome, Investigator!</h3>
+                <p className="text-green-200 text-sm">
+                  Your subscription has been activated. You now have access to all premium features including the exclusive chat and audio narrations.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSuccessMessage(false)}
+                className="text-green-400 hover:text-green-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showCancelMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-yellow-900/90 backdrop-blur-sm border border-yellow-500 rounded-lg p-4 max-w-md">
+            <div className="flex items-start gap-3">
+              <X className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-300 mb-1">Checkout Cancelled</h3>
+                <p className="text-yellow-200 text-sm">
+                  No worries! You can try again anytime. Your account remains unchanged.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCancelMessage(false)}
+                className="text-yellow-400 hover:text-yellow-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6 text-shadow-crime">
@@ -41,8 +150,14 @@ export default function MembershipPage() {
               ))}
             </ul>
 
-            <button className="w-full border border-border-primary hover:border-accent-yellow text-text-primary py-3 rounded-lg font-semibold transition-colors">
-              Current Plan
+            <button 
+              onClick={() => !user ? router.push('/auth') : undefined}
+              className={`w-full border border-border-primary hover:border-accent-yellow text-text-primary py-3 rounded-lg font-semibold transition-colors ${
+                isInvestigator ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-yellow/10'
+              }`}
+              disabled={isInvestigator}
+            >
+              {!user ? 'Sign In to Get Started' : isInvestigator ? 'Current Plan' : 'Current Plan'}
             </button>
           </div>
 
@@ -76,9 +191,42 @@ export default function MembershipPage() {
               ))}
             </ul>
 
-            <button className="w-full bg-accent-red hover:bg-accent-red/80 text-white py-4 rounded-lg font-bold text-lg transition-colors flex items-center justify-center gap-2 member-badge-glow">
-              Become an Investigator
-              <ArrowRight className="w-5 h-5" />
+            {error && (
+              <div className="mb-4 p-3 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
+                {error}
+              </div>
+            )}
+
+            <button 
+              onClick={handleUpgradeToInvestigator}
+              disabled={loading || isInvestigator}
+              className={`w-full py-4 rounded-lg font-bold text-lg transition-colors flex items-center justify-center gap-2 member-badge-glow ${
+                isInvestigator 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-accent-red hover:bg-accent-red/80 text-white'
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Processing...
+                </>
+              ) : isInvestigator ? (
+                <>
+                  <Check className="w-5 h-5" />
+                  Active Member
+                </>
+              ) : !user ? (
+                <>
+                  Sign In to Subscribe
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  Become an Investigator
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -194,13 +342,35 @@ export default function MembershipPage() {
           <p className="text-lg text-text-muted mb-6">
             Ready to start your investigation?
           </p>
-          <Link 
-            href="/"
-            className="bg-accent-yellow hover:bg-accent-yellow/80 text-bg-primary px-8 py-4 rounded-lg font-bold text-lg transition-colors inline-flex items-center gap-2 member-badge-glow"
+          <button 
+            onClick={handleFinalCTA}
+            disabled={loading}
+            className={`bg-accent-yellow hover:bg-accent-yellow/80 text-bg-primary px-8 py-4 rounded-lg font-bold text-lg transition-colors inline-flex items-center gap-2 member-badge-glow ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Join ShadowFiles Today
-            <ArrowRight className="w-6 h-6" />
-          </Link>
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-bg-primary"></div>
+                Processing...
+              </>
+            ) : isInvestigator ? (
+              <>
+                Go to Dashboard
+                <ArrowRight className="w-6 h-6" />
+              </>
+            ) : !user ? (
+              <>
+                Sign In to Get Started
+                <ArrowRight className="w-6 h-6" />
+              </>
+            ) : (
+              <>
+                Join ShadowFiles Today
+                <ArrowRight className="w-6 h-6" />
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

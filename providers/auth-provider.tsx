@@ -13,6 +13,7 @@ interface AuthState {
   userProfile: Database['public']['Tables']['user_profiles']['Row'] | null
   userSubscription: Database['public']['Tables']['user_subscriptions']['Row'] | null
   isInvestigator: boolean
+  isAdmin: boolean
   loading: boolean
 }
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userProfile: null,
     userSubscription: null,
     isInvestigator: false,
+    isAdmin: false,
     loading: true,
   })
   const [authService, setAuthService] = useState<ReturnType<typeof getAuthService> | null>(null)
@@ -40,23 +42,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth service on component mount
   useEffect(() => {
+    console.log('Auth provider initializing...')
+    
     const service = getAuthService()
     setAuthService(service)
 
+    // Add a fallback timeout to ensure loading is set to false
+    const fallbackTimeout = setTimeout(() => {
+      console.log('Fallback timeout: setting loading to false')
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false 
+      }))
+    }, 2000)
+
     const fetchInitialSession = async () => {
-      const { session } = await service.getSession()
-      if (session?.user) {
-        await loadUserData(service, session.user.id)
-      } else {
-        setAuthState(prev => ({ ...prev, loading: false }))
+      try {
+        console.log('Fetching initial session...')
+        
+        // Simple session fetch
+        const { session, error } = await service.getSession()
+        
+        console.log('Session fetch result:', { session: !!session, error })
+        
+        if (error) {
+          console.error('Error fetching initial session:', error)
+          setAuthState(prev => ({ 
+            ...prev, 
+            user: null,
+            session: null,
+            loading: false 
+          }))
+          return
+        }
+        
+        if (session?.user) {
+          console.log('User found in session, loading data...')
+          setAuthState(prev => ({ 
+            ...prev, 
+            user: session.user,
+            session: session,
+            loading: true 
+          }))
+          await loadUserData(service, session.user.id)
+        } else {
+          console.log('No session found, setting loading to false')
+          setAuthState(prev => ({ 
+            ...prev, 
+            user: null,
+            session: null,
+            loading: false 
+          }))
+        }
+      } catch (error) {
+        console.error('Error in fetchInitialSession:', error)
+        setAuthState(prev => ({ 
+          ...prev, 
+          user: null,
+          session: null,
+          loading: false 
+        }))
+      } finally {
+        clearTimeout(fallbackTimeout)
       }
     }
 
     fetchInitialSession()
+
+    return () => {
+      clearTimeout(fallbackTimeout)
+    }
   }, [])
 
   // Centralized function to load user data and update state atomically
   const loadUserData = async (service: ReturnType<typeof getAuthService>, userId: string) => {
+    console.log('Loading user data for:', userId)
     setAuthState(prev => ({ ...prev, loading: true }))
     try {
       const [profileResult, subscriptionResult] = await Promise.all([
@@ -64,16 +124,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         service.getUserSubscription(userId),
       ])
 
+      console.log('Profile result:', profileResult)
+      console.log('Subscription result:', subscriptionResult)
+
       const userProfile = profileResult?.profile || null
       const userSubscription = subscriptionResult?.subscription || null
       const isInvestigator =
         userSubscription?.tier === 'investigator' && userSubscription?.status === 'active'
+      const isAdmin = userProfile?.role === 'admin' || userProfile?.is_admin === true
+
+      console.log('Setting auth state:', { isInvestigator, isAdmin, loading: false })
 
       setAuthState(prev => ({
         ...prev,
         userProfile,
         userSubscription,
         isInvestigator,
+        isAdmin,
         loading: false,
       }))
     } catch (error) {
@@ -83,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userProfile: null,
         userSubscription: null,
         isInvestigator: false,
+        isAdmin: false,
         loading: false,
       }))
     }

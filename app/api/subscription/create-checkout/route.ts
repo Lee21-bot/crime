@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '../../../lib/supabase/server'
-import { createCheckoutSession, getOrCreateCustomer, STRIPE_PRICE_IDS } from '../../../lib/stripe'
+import { createClient } from '../../../../lib/supabase/server'
+import { createCheckoutSession, getOrCreateCustomer, STRIPE_PRICE_IDS } from '../../../../lib/stripe'
 
 export async function POST(request: NextRequest) {
   try {

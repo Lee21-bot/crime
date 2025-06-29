@@ -108,13 +108,14 @@ export default function ChatPage() {
                   <button
                     key={channel.id}
                     onClick={() => setSelectedChannel(channel)}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                      selectedChannel.id === channel.id
-                        ? 'bg-accent-red/20 text-accent-yellow'
-                        : 'hover:bg-bg-secondary/80 text-text-secondary'
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors flex items-center gap-2
+                      ${selectedChannel.id === channel.id
+                        ? 'bg-red-700 border-l-4 border-accent-yellow text-white font-bold shadow-md outline-none focus:outline-none'
+                        : 'hover:bg-bg-secondary/80 text-text-secondary'}
+                    `}
+                    style={{ boxShadow: selectedChannel.id === channel.id ? '0 0 0 2px #FFD600' : undefined }}
                   >
-                    # {channel.name}
+                    <span className="mr-2">#</span> {channel.name}
                   </button>
                 ))}
               </div>

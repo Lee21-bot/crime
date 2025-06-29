@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Lock, Star, Calendar, Tag, AlertTriangle, MessageSquare, Send } from 'lucide-react'
+import { Lock, Star, Calendar, Tag, AlertTriangle, MessageSquare, Send, BookOpen, Clock, Eye, Share2, Bookmark } from 'lucide-react'
 import { useAuth } from '../../../providers/auth-provider'
-import { getCaseFilesService } from '../../../lib/case-files/case-files-service'
+import { getCaseFileBySlug, addComment } from '../../../lib/case-files/case-files-service'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
+import { InlineAd } from '../../../components/ui/google-ads'
 import type { CaseFile, Comment } from '../../../types/case-files'
+import { AudioGenerator } from '../../../components/audio/audio-generator'
 
 export default function CaseFilePage() {
   const router = useRouter()
@@ -18,18 +20,30 @@ export default function CaseFilePage() {
   const [error, setError] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [readingProgress, setReadingProgress] = useState(0)
 
   useEffect(() => {
     loadCaseFile()
   }, [slug])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      const progress = (scrollTop / docHeight) * 100
+      setReadingProgress(Math.min(progress, 100))
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const loadCaseFile = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const caseFilesService = getCaseFilesService()
-      const { caseFile: data, error } = await caseFilesService.getCaseFileBySlug(slug as string)
+      const { caseFile: data, error } = await getCaseFileBySlug(slug as string)
 
       if (error) throw error
       setCaseFile(data)
@@ -47,8 +61,7 @@ export default function CaseFilePage() {
 
     try {
       setSubmittingComment(true)
-      const caseFilesService = getCaseFilesService()
-      const { error } = await caseFilesService.addComment(caseFile.id, newComment)
+      const { error } = await addComment(caseFile.id, newComment)
 
       if (error) throw error
       setNewComment('')
@@ -58,6 +71,18 @@ export default function CaseFilePage() {
       setError('Failed to add comment. Please try again later.')
     } finally {
       setSubmittingComment(false)
+    }
+  }
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: caseFile?.title,
+        text: caseFile?.summary,
+        url: window.location.href,
+      })
+    } else {
+      navigator.clipboard.writeText(window.location.href)
     }
   }
 
@@ -72,9 +97,9 @@ export default function CaseFilePage() {
   if (error || !caseFile) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <AlertTriangle className="h-16 w-16 text-accent-red mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-text-primary mb-2">Case File Not Found</h1>
-        <p className="text-text-muted mb-8">{error || 'This case file does not exist.'}</p>
+        <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">Case File Not Found</h1>
+        <p className="text-gray-400 mb-8">{error || 'This case file does not exist.'}</p>
         <Button onClick={() => router.push('/case-files')}>
           Return to Case Files
         </Button>
@@ -86,19 +111,27 @@ export default function CaseFilePage() {
 
   return (
     <div className="min-h-screen">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-gray-800 z-50">
+        <div 
+          className="h-full bg-yellow-500 transition-all duration-300"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
       {/* Premium Content Banner */}
       {isLocked && (
-        <div className="bg-accent-yellow/10 border-y border-accent-yellow/20">
+        <div className="bg-yellow-500/10 border-y border-yellow-500/20">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-accent-yellow" />
-              <p className="text-accent-yellow font-medium">
+              <Lock className="h-5 w-5 text-yellow-500" />
+              <p className="text-yellow-500 font-medium">
                 This is a premium case file. Upgrade to access full details.
               </p>
             </div>
             <Button
               onClick={() => router.push('/membership')}
-              className="bg-accent-yellow hover:bg-accent-yellow/90 text-bg-primary"
+              className="bg-yellow-500 hover:bg-yellow-500/90 text-black"
             >
               Become an Investigator
             </Button>
@@ -110,65 +143,111 @@ export default function CaseFilePage() {
         {/* Header */}
         <header className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <span className="px-3 py-1 rounded-full text-sm font-medium capitalize bg-bg-secondary text-text-muted">
+            <span className="px-3 py-1 rounded-full text-sm font-medium capitalize bg-gray-800 text-gray-400">
               {caseFile.difficulty_level}
             </span>
             {caseFile.audio_url && (
-              <span className="flex items-center gap-2 text-sm text-accent-yellow">
+              <span className="flex items-center gap-2 text-sm text-yellow-500">
                 <Star className="h-4 w-4" />
                 Audio Available
               </span>
             )}
-          </div>
-
-          <h1 className="text-4xl font-bold text-text-primary mb-4">
-            {caseFile.title}
-          </h1>
-
-          <div className="flex items-center gap-6 text-sm text-text-muted mb-6">
-            <span className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              {new Date(caseFile.created_at).toLocaleDateString()}
-            </span>
-            {caseFile.tags && caseFile.tags.length > 0 && (
-              <span className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                {caseFile.tags.map(tag => tag.name).join(', ')}
+            {caseFile.required_tier === 'investigator' && (
+              <span className="flex items-center gap-2 text-sm text-yellow-500">
+                <Star className="h-4 w-4" />
+                Premium Case
               </span>
             )}
           </div>
 
-          <p className="text-lg text-text-muted">
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+            {caseFile.title}
+          </h1>
+
+          <div className="flex items-center gap-6 text-sm text-gray-400 mb-6">
+            <span className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {new Date(caseFile.created_at).toLocaleDateString()}
+            </span>
+            <span className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              {Math.ceil(caseFile.content.length / 1000)} min read
+            </span>
+            <span className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              {caseFile.view_count || 0} views
+            </span>
+            {caseFile.tags && caseFile.tags.length > 0 && (
+              <span className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                {Array.isArray(caseFile.tags) ? caseFile.tags.join(', ') : caseFile.tags}
+              </span>
+            )}
+          </div>
+
+          <p className="text-lg text-gray-400 leading-relaxed max-w-4xl">
             {caseFile.summary}
           </p>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              className="flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Bookmark className="h-4 w-4" />
+              Bookmark
+            </Button>
+          </div>
         </header>
 
         {/* Content */}
         <div className="prose prose-invert max-w-none">
           {isLocked ? (
-            <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-8 text-center border border-border-primary">
-              <Lock className="h-12 w-12 text-accent-yellow mx-auto mb-4" />
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8 text-center border border-gray-600">
+              <Lock className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-4">Premium Content</h2>
-              <p className="text-text-muted mb-6">
+              <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
                 Join our Investigator tier to access the complete case file, including:
                 <br />
                 Detailed timeline, evidence analysis, expert insights, and more.
               </p>
               <Button
                 onClick={() => router.push('/membership')}
-                className="bg-accent-yellow hover:bg-accent-yellow/90 text-bg-primary"
+                className="bg-yellow-500 hover:bg-yellow-500/90 text-black"
               >
                 Upgrade to Access
               </Button>
             </div>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: caseFile.content }} />
+            <>
+              {/* Inline Ad before content */}
+              <InlineAd />
+              
+              <div 
+                className="max-w-4xl mx-auto leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: caseFile.content }} 
+              />
+              
+              {/* Inline Ad after content */}
+              <InlineAd />
+            </>
           )}
         </div>
 
-        {/* Comments Section */}
+        {/* Comments Section - Only show for unlocked content */}
         {!isLocked && (
-          <section className="mt-12 border-t border-border-primary pt-8">
+          <section className="mt-12 border-t border-gray-600 pt-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <MessageSquare className="h-6 w-6" />
               Discussion
@@ -195,37 +274,18 @@ export default function CaseFilePage() {
                 </div>
               </form>
             ) : (
-              <div className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-4 mb-8 text-center">
-                <p className="text-text-muted">
-                  Please <button onClick={() => router.push('/auth')} className="text-accent-yellow hover:underline">sign in</button> to join the discussion.
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 mb-8 text-center">
+                <p className="text-gray-400">
+                  Please <button onClick={() => router.push('/auth')} className="text-yellow-500 hover:underline">sign in</button> to join the discussion.
                 </p>
               </div>
             )}
 
-            {/* Comments List */}
+            {/* Comments List - Note: Comments functionality would need to be implemented separately */}
             <div className="space-y-6">
-              {caseFile.comments && caseFile.comments.length > 0 ? (
-                caseFile.comments.map(comment => (
-                  <div
-                    key={comment.id}
-                    className="bg-bg-secondary/50 backdrop-blur-sm rounded-lg p-4 border border-border-primary"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-text-primary">
-                        {comment.user?.display_name || comment.user?.email}
-                      </span>
-                      <span className="text-sm text-text-muted">
-                        {new Date(comment.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-text-muted">{comment.content}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-text-muted py-8">
-                  No comments yet. Be the first to share your thoughts!
-                </p>
-              )}
+              <p className="text-center text-gray-400 py-8">
+                Comments feature coming soon!
+              </p>
             </div>
           </section>
         )}

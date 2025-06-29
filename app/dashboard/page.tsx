@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState(userProfile?.display_name || '')
+  const [userColor, setUserColor] = useState(userProfile?.color || '#3B82F6') // Default blue
   const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
@@ -50,12 +51,14 @@ export default function DashboardPage() {
       
       console.log('Attempting to update profile for user:', user.id)
       console.log('New display name:', displayName.trim())
+      console.log('New color:', userColor)
       
       const { data, error } = await supabase
         .from('user_profiles')
         .upsert({
           user_id: user.id,
           display_name: displayName.trim(),
+          color: userColor,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' })
         .select()
@@ -75,10 +78,9 @@ export default function DashboardPage() {
       }
 
       console.log('Profile updated successfully:', data)
-
-      // Refresh the user profile in the auth context
       await refreshUserData()
       setIsEditing(false)
+      alert('Profile updated successfully!')
     } catch (error) {
       console.error('Error updating profile:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -90,12 +92,16 @@ export default function DashboardPage() {
 
   const handleCancelEdit = () => {
     setDisplayName(userProfile?.display_name || '')
+    setUserColor(userProfile?.color || '#3B82F6')
     setIsEditing(false)
   }
 
-  // Update display name when userProfile changes
+  // Update local state when userProfile changes
   useEffect(() => {
-    setDisplayName(userProfile?.display_name || '')
+    if (userProfile) {
+      setDisplayName(userProfile.display_name || '')
+      setUserColor(userProfile.color || '#3B82F6')
+    }
   }, [userProfile])
 
   if (loading) {
@@ -320,20 +326,53 @@ export default function DashboardPage() {
                 </div>
                 
                 <div>
+                  <label className="text-sm text-text-muted">Chat Color</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div 
+                      className="w-6 h-6 rounded-full border border-border-primary shadow-sm"
+                      style={{ backgroundColor: userProfile?.color || '#3B82F6' }}
+                    />
+                    <span className="text-sm font-medium">{userProfile?.color || '#3B82F6'}</span>
+                  </div>
+                </div>
+                
+                <div>
                   <label className="text-sm text-text-muted">Member Type</label>
                   <p className="font-medium">{isInvestigator ? 'Investigator' : 'Visitor'}</p>
                 </div>
               </div>
 
               {isEditing ? (
-                <div className="mt-4">
-                  <Input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Enter new display name"
-                  />
-                  <div className="mt-2 flex gap-2">
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="text-sm text-text-muted">Display Name</label>
+                    <Input
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Enter new display name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm text-text-muted">Chat Color</label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div 
+                        className="w-8 h-8 rounded-full border-2 border-border-primary shadow-sm"
+                        style={{ backgroundColor: userColor }}
+                      />
+                      <Input
+                        type="color"
+                        value={userColor}
+                        onChange={(e) => setUserColor(e.target.value)}
+                        className="w-16 h-8 p-1 border border-border-primary rounded cursor-pointer"
+                      />
+                      <span className="text-xs text-text-muted">{userColor}</span>
+                    </div>
+                    <p className="text-xs text-text-muted mt-1">This color will be used for your avatar in chat</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
                     <Button 
                       variant="outline" 
                       onClick={handleUpdateProfile}

@@ -3,6 +3,7 @@ import { Crimson_Pro, Inter } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from '../providers/client-providers'
 import { Navigation } from '../components/layout/navigation'
+import Script from 'next/script'
 
 const crimsonPro = Crimson_Pro({ 
   subsets: ["latin"],
@@ -63,6 +64,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        {/* Google AdSense */}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PUBLISHER_ID || 'ca-pub-YOUR_PUBLISHER_ID'}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={`${crimsonPro.variable} ${inter.variable} font-serif min-h-screen bg-bg-primary text-text-primary antialiased`}>
         <ClientProviders>
           <div className="relative min-h-screen overflow-hidden">
